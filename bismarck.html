@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bismarck & Fyrmannavist</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #6b6b65;
+    --text3: #9a9a94;
+    --green: #2d7a4f;
+    --green-bg: #eaf3e6;
+    --red: #b03030;
+    --red-bg: #fceaea;
+    --blue: #1a5fa8;
+    --blue-bg: #e8f0fa;
+    --gold: #8a6800;
+    --gold-bg: #fdf6dc;
+    --pass-bg: #fff4f0;
+    --pass-border: #e8c4b8;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #181815;
+      --surface: #242420;
+      --surface2: #2e2e2a;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --text: #f0efe8;
+      --text2: #9a9a90;
+      --text3: #6a6a62;
+      --green: #4caf78;
+      --green-bg: #162b1e;
+      --red: #e06060;
+      --red-bg: #2a1414;
+      --blue: #6aa3e0;
+      --blue-bg: #141e30;
+      --gold: #d4a820;
+      --gold-bg: #2a2010;
+      --pass-bg: #2a1c18;
+      --pass-border: #5a3828;
+    }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .label { font-size: 11px; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+
+  .game-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .game-btn {
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .game-btn:hover { border-color: var(--border2); background: var(--surface2); }
+  .game-btn.selected { border-color: var(--text); background: var(--surface2); }
+  .game-btn .name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .game-btn .desc { font-size: 12px; color: var(--text2); }
+
+  .player-inputs { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .player-row { display: flex; align-items: center; gap: 10px; }
+  .player-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface2); border: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text2); flex-shrink: 0;
+  }
+  input[type=text] {
+    flex: 1; padding: 10px 12px; font-size: 15px;
+    border: 0.5px solid var(--border); border-radius: 10px;
+    background: var(--surface2); color: var(--text);
+    outline: none; transition: border-color 0.15s;
+  }
+  input[type=text]:focus { border-color: var(--border2); background: var(--surface); }
+
+  .btn {
+    padding: 11px 20px; border-radius: 10px; font-size: 15px; font-weight: 500;
+    cursor: pointer; border: 0.5px solid var(--border); background: var(--surface2);
+    color: var(--text); transition: background 0.15s; display: inline-block;
+  }
+  .btn:hover { background: var(--surface); }
+  .btn-primary {
+    background: var(--text); color: var(--bg);
+    border-color: transparent; width: 100%; text-align: center;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+
+  /* Game header */
+  .game-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .game-title { font-size: 12px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 3px; }
+  .game-names { font-size: 18px; font-weight: 600; }
+
+  /* Player score cards */
+  .player-cards { display: grid; gap: 10px; margin-bottom: 20px; }
+  .player-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 14px;
+  }
+  .player-card.leader { border-color: var(--gold); background: var(--gold-bg); }
+  .pc-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .pc-total { font-size: 28px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+  .pc-total.pos { color: var(--green); }
+  .pc-total.neg { color: var(--red); }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px; border-radius: 20px; font-size: 12px;
+    border: 0.5px solid var(--border); background: var(--surface2);
+    cursor: pointer; user-select: none; transition: all 0.15s;
+  }
+  .chip.done { background: var(--surface); border-color: var(--border2); text-decoration: line-through; color: var(--text2); }
+  .chip.done .chk { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chk {
+    width: 14px; height: 14px; border-radius: 3px;
+    border: 0.5px solid var(--border2); display: inline-flex;
+    align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0;
+  }
+
+  /* Rounds table */
+  .rounds-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .rounds-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rounds-table th {
+    padding: 9px 8px; text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase;
+    background: var(--surface2); border-bottom: 0.5px solid var(--border);
+  }
+  .rounds-table th.center, .rounds-table td.center { text-align: center; }
+  .rounds-table td {
+    padding: 6px 8px; border-bottom: 0.5px solid var(--border);
+    vertical-align: middle;
+  }
+  .rounds-table tr:last-child td { border-bottom: none; }
+  .rounds-table tr.pass-row { background: var(--pass-bg); }
+  .rounds-table tfoot td {
+    padding: 10px 8px; background: var(--surface2);
+    font-weight: 600; border-top: 0.5px solid var(--border2);
+  }
+
+  .round-num { font-size: 11px; color: var(--text3); }
+  .forhand-name { font-weight: 600; font-size: 13px; }
+
+  select.type-select {
+    font-size: 12px; padding: 3px 6px; border-radius: 6px;
+    border: 0.5px solid var(--border); background: var(--surface2);
+    color: var(--text); outline: none; cursor: pointer; max-width: 72px;
+  }
+  select.type-select.pass { border-color: var(--pass-border); background: var(--pass-bg); color: var(--red); }
+
+  input.score-input {
+    width: 48px; padding: 4px 4px; font-size: 14px;
+    border: none; border-bottom: 0.5px solid var(--border2);
+    background: transparent; color: var(--text);
+    text-align: center; outline: none;
+  }
+  input.score-input.pass { color: var(--red); }
+
+  .total-val { font-size: 16px; font-weight: 600; }
+  .total-val.pos { color: var(--green); }
+  .total-val.neg { color: var(--red); }
+
+  .pass-badge {
+    font-size: 10px; color: var(--red); background: var(--pass-bg);
+    border: 0.5px solid var(--pass-border); border-radius: 4px;
+    padding: 1px 5px; margin-left: 4px; vertical-align: middle;
+  }
+
+  .add-round-row td { padding: 8px; }
+
+  /* Fyrmannavist teams */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .team-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 12px;
+  }
+  .team-card.leader { border-color: var(--gold); background: var(--gold-bg); }
+  .team-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .team-names { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .team-total { font-size: 26px; font-weight: 600; }
+
+  .legend { font-size: 12px; color: var(--text2); margin-bottom: 12px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
+  .legend span { color: var(--red); font-weight: 600; }
+
+  @media (max-width: 400px) {
+    .player-cards { grid-template-columns: 1fr; }
+    input.score-input { width: 38px; }
+    select.type-select { max-width: 62px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+const GAME_TYPES = ["Spel","Pass","Spader","Valfri"];
+
+let S = {
+  screen: "setup", // setup | bismarck | fyrman
+  game: null,
+  players: [],
+  rounds: [],
+  checked: {}
+};
+
+try { const d = localStorage.getItem("bsk2"); if (d) S = JSON.parse(d); } catch(e) {}
+if (S.screen === "setup") S = { screen:"setup", game:null, players:[], rounds:[], checked:{} };
+
+function save() { try { localStorage.setItem("bsk2", JSON.stringify(S)); } catch(e) {} }
+
+function total(player) {
+  return S.rounds.reduce((sum, r) => {
+    const v = parseFloat(r.scores[player]);
+    if (isNaN(v)) return sum;
+    return sum + (r.type === "Pass" ? -Math.abs(v) : v);
+  }, 0);
+}
+
+function teamTotal(idxA, idxB) {
+  return total(S.players[idxA]) + total(S.players[idxB]);
+}
+
+function fmt(n) { return (n > 0 ? "+" : "") + n; }
+function cls(n) { return n > 0 ? "pos" : n < 0 ? "neg" : ""; }
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+
+function render() {
+  const app = document.getElementById("app");
+  if (S.screen === "setup")     app.innerHTML = setupHTML();
+  else if (S.screen === "bismarck") app.innerHTML = bismarckHTML();
+  else                          app.innerHTML = fyrmanHTML();
+  bind();
+}
+
+// ─── SETUP ──────────────────────────────────────────────────────────────────
+
+function setupHTML() {
+  const g = S.game;
+  const n = g === "bismarck" ? 3 : g === "fyrman" ? 4 : 0;
+  const p = S.players.length === n ? S.players : Array(n).fill("");
+  return `
+    <h1>Kortspel</h1>
+    <div class="subtitle">Välj spel och skriv in spelarna</div>
+
+    <div class="label">Välj spel</div>
+    <div class="game-choice">
+      <div class="game-btn ${g==='bismarck'?'selected':''}" onclick="selectGame('bismarck')">
+        <div class="name">Bismarck</div>
+        <div class="desc">3 spelare · 12 rundor</div>
+      </div>
+      <div class="game-btn ${g==='fyrman'?'selected':''}" onclick="selectGame('fyrman')">
+        <div class="name">Fyrmannavist</div>
+        <div class="desc">4 spelare · 2 lag</div>
+      </div>
+    </div>
+
+    ${n > 0 ? `
+      <div class="label">Spelare</div>
+      <div class="player-inputs">
+        ${p.map((name, i) => `
+          <div class="player-row">
+            <div class="player-num">${i+1}</div>
+            <input type="text" class="pname" data-i="${i}" value="${esc(name)}" placeholder="Spelarens namn">
+          </div>`).join("")}
+      </div>
+      <div class="btn btn-primary" onclick="startGame()">Starta spelet</div>
+    ` : ""}
+  `;
+}
+
+// ─── BISMARCK ───────────────────────────────────────────────────────────────
+
+function bismarckHTML() {
+  const ps = S.players;
+  const totals = ps.map(p => total(p));
+  const max = Math.max(...totals);
+
+  return `
+    <div class="game-header">
+      <div>
+        <div class="game-title">Bismarck</div>
+        <div class="game-names">${ps.join(" · ")}</div>
+      </div>
+      <div class="btn btn-sm" onclick="resetGame()">Nytt spel</div>
+    </div>
+
+    <div class="legend">
+      <span>Pass</span> = poängen räknas som minus på totalpoängen
+    </div>
+
+    <div class="player-cards" style="grid-template-columns:repeat(${ps.length},1fr)">
+      ${ps.map((p,i) => {
+        const t = totals[i];
+        const leading = t === max && t !== 0;
+        return `<div class="player-card ${leading ? 'leader' : ''}">
+          <div class="pc-name">${esc(p)}${leading ? " ★" : ""}</div>
+          <div class="pc-total ${cls(t)}">${fmt(t)}</div>
+          <div class="chips">
+            ${GAME_TYPES.map(gt => {
+              const done = S.checked[p] && S.checked[p][gt];
+              return `<div class="chip ${done?'done':''}" onclick="toggleChip('${esc(p)}','${gt}')">
+                <div class="chk">${done ? "✓" : ""}</div>${gt}
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="rounds-card">
+      <table class="rounds-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Förhand</th>
+            <th>Speltyp</th>
+            ${ps.map(p => `<th class="center">${esc(p)}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${S.rounds.map((r, idx) => {
+            const isPass = r.type === "Pass";
+            return `<tr class="${isPass ? 'pass-row' : ''}">
+              <td class="round-num">${r.id}</td>
+              <td class="forhand-name">${esc(r.forhand)}</td>
+              <td>
+                <select class="type-select ${isPass ? 'pass' : ''}" data-ridx="${idx}" onchange="setType(${idx},this.value)">
+                  <option value="">—</option>
+                  ${GAME_TYPES.map(gt => `<option value="${gt}" ${r.type===gt?'selected':''}>${gt}</option>`).join("")}
+                </select>
+              </td>
+              ${ps.map(p => {
+                const v = r.scores[p];
+                return `<td class="center">
+                  <input class="score-input ${isPass?'pass':''}" type="number" value="${v}"
+                    onchange="setScore(${idx},'${esc(p)}',this.value)"
+                    placeholder="—">
+                </td>`;
+              }).join("")}
+            </tr>`;
+          }).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="font-size:12px;color:var(--text2)">Totalt</td>
+            ${totals.map(t => `<td class="center"><span class="total-val ${cls(t)}">${fmt(t)}</span></td>`).join("")}
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+}
+
+// ─── FYRMANNAVIST ───────────────────────────────────────────────────────────
+
+function fyrmanHTML() {
+  const ps = S.players;
+  const totals = ps.map(p => total(p));
+  const t1 = totals[0] + totals[2];
+  const t2 = totals[1] + totals[3];
+
+  return `
+    <div class="game-header">
+      <div>
+        <div class="game-title">Fyrmannavist</div>
+        <div class="game-names">${ps.join(" · ")}</div>
+      </div>
+      <div class="btn btn-sm" onclick="resetGame()">Nytt spel</div>
+    </div>
+
+    <div class="teams">
+      <div class="team-card ${t1 > t2 ? 'leader' : ''}">
+        <div class="team-label">Lag 1${t1 > t2 ? " ★" : ""}</div>
+        <div class="team-names">${esc(ps[0])} & ${esc(ps[2])}</div>
+        <div class="team-total ${cls(t1)}">${fmt(t1)}</div>
+      </div>
+      <div class="team-card ${t2 > t1 ? 'leader' : ''}">
+        <div class="team-label">Lag 2${t2 > t1 ? " ★" : ""}</div>
+        <div class="team-names">${esc(ps[1])} & ${esc(ps[3])}</div>
+        <div class="team-total ${cls(t2)}">${fmt(t2)}</div>
+      </div>
+    </div>
+
+    <div class="rounds-card">
+      <table class="rounds-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            ${ps.map(p => `<th class="center">${esc(p)}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${S.rounds.map((r, idx) => `
+            <tr>
+              <td class="round-num">${r.id}</td>
+              ${ps.map(p => `<td class="center">
+                <input class="score-input" type="number" value="${r.scores[p]}"
+                  onchange="setScore(${idx},'${esc(p)}',this.value)" placeholder="—">
+              </td>`).join("")}
+            </tr>`).join("")}
+          <tr class="add-round-row">
+            <td colspan="${ps.length + 1}">
+              <div class="btn btn-sm" onclick="addRound()" style="width:100%;text-align:center">+ Lägg till runda</div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style="font-size:12px;color:var(--text2)">Tot</td>
+            ${totals.map(t => `<td class="center"><span class="total-val ${cls(t)}">${fmt(t)}</span></td>`).join("")}
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+}
+
+// ─── ACTIONS ────────────────────────────────────────────────────────────────
+
+function selectGame(g) {
+  S.game = g; S.players = [];
+  render();
+}
+
+function startGame() {
+  const inputs = document.querySelectorAll(".pname");
+  const names = Array.from(inputs).map((el, i) => el.value.trim() || `Spelare ${i+1}`);
+  S.players = names;
+  S.checked = {};
+  names.forEach(p => { S.checked[p] = {}; GAME_TYPES.forEach(g => { S.checked[p][g] = false; }); });
+
+  if (S.game === "bismarck") {
+    S.rounds = Array.from({length: 12}, (_, i) => ({
+      id: i + 1,
+      forhand: names[i % 3],
+      type: "",
+      scores: Object.fromEntries(names.map(p => [p, ""]))
+    }));
+    S.screen = "bismarck";
+  } else {
+    S.rounds = Array.from({length: 8}, (_, i) => ({
+      id: i + 1,
+      forhand: names[i % 4],
+      type: "",
+      scores: Object.fromEntries(names.map(p => [p, ""]))
+    }));
+    S.screen = "fyrman";
+  }
+  save(); render();
+}
+
+function setType(idx, val) {
+  S.rounds[idx].type = val;
+  const r = S.rounds[idx];
+  const p = r.forhand;
+  // auto-check the chip for the forhand player
+  if (val && S.checked[p]) {
+    S.checked[p][val] = true;
+  }
+  save(); render();
+}
+
+function setScore(idx, player, val) {
+  S.rounds[idx].scores[player] = val;
+  save(); render();
+}
+
+function toggleChip(player, gt) {
+  if (!S.checked[player]) S.checked[player] = {};
+  S.checked[player][gt] = !S.checked[player][gt];
+  save(); render();
+}
+
+function addRound() {
+  const n = S.rounds.length;
+  const ps = S.players;
+  S.rounds.push({
+    id: n + 1,
+    forhand: ps[n % ps.length],
+    type: "",
+    scores: Object.fromEntries(ps.map(p => [p, ""]))
+  });
+  save(); render();
+}
+
+function resetGame() {
+  if (!confirm("Starta om spelet? All poängdata försvinner.")) return;
+  S = { screen:"setup", game:null, players:[], rounds:[], checked:{} };
+  save(); render();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function bind() {}
+
+render();
+</script>
+</body>
+</html>
