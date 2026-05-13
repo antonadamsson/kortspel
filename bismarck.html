@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bismarck</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--s2:#eeecea;--border:rgba(0,0,0,.09);--b2:rgba(0,0,0,.18);
+  --text:#1a1a18;--t2:#6b6a65;--t3:#aeada7;
+  --green:#2a7a4f;--red:#b83030;
+  --gold:#7a5e00;--gbg:#fdf5d8;--gborder:#d4b84a;
+  --pass:#c0390a;--pbg:#fff4ee;--pborder:#f5c4ae;
+  --blue:#1a5fa8;--bbg:#e8f0fa;--bborder:#a8c4e8;
+  --r:12px;--rs:8px;
+  --c0:#2a7a4f;--c1:#1a5fa8;--c2:#b03060;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#181816;--surface:#222220;--s2:#2a2a27;--border:rgba(255,255,255,.09);--b2:rgba(255,255,255,.18);
+  --text:#f0efe8;--t2:#9a9990;--t3:#5a5a55;
+  --green:#4caf78;--red:#e06060;
+  --gold:#d4a820;--gbg:#252010;--gborder:#8a7020;
+  --pass:#e06040;--pbg:#281810;--pborder:#6a3020;
+  --blue:#6aa3e0;--bbg:#141e30;--bborder:#2a4a70;
+  --c0:#4caf78;--c1:#6aa3e0;--c2:#e07090;
+}}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;min-height:100vh}
+.page{max-width:560px;margin:0 auto;padding:16px 14px 80px}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}
+h1{font-size:24px;font-weight:700}h2{font-size:18px;font-weight:600}
+.ha{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:var(--rs);border:.5px solid var(--b2);background:var(--s2);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.btn:active{opacity:.6}
+.btn-primary{background:var(--text);color:var(--bg);border-color:transparent;width:100%;font-size:15px;padding:14px;border-radius:var(--r);margin-top:8px;display:flex}
+.btn-gold{background:var(--gbg);color:var(--gold);border-color:var(--gborder)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--t2)}
+.sec{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin:18px 0 10px}
+.slot{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.slot-lbl{font-size:11px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+input[type=text]{width:100%;padding:10px 12px;font-size:15px;border:.5px solid var(--border);border-radius:var(--rs);background:var(--s2);color:var(--text);outline:none}
+input[type=text]:focus{border-color:var(--b2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{padding:5px 12px;border-radius:20px;font-size:13px;border:.5px solid var(--border);background:var(--s2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.chip.active{background:var(--text);color:var(--bg);border-color:transparent}
+.scards{display:grid;gap:8px;margin-bottom:12px}
+.scard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.scard.leader{border-color:var(--gborder);background:var(--gbg)}
+.sc-n{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-t{font-size:26px;font-weight:700;margin-bottom:6px}
+.sc-pips{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.pip{font-size:9px;padding:2px 5px;border-radius:4px;border:.5px solid var(--border);color:var(--t3)}
+.pip.used{background:var(--s2);text-decoration:line-through;color:var(--t2)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.prog-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.prog-row{display:flex;align-items:center;gap:12px}
+.prog-info{flex:1}.prog-title{font-size:14px;font-weight:600;margin-bottom:2px}.prog-sub{font-size:12px;color:var(--t2)}
+.prog-bar{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:10px}
+.prog-fill{height:100%;border-radius:3px;background:var(--green);transition:width .3s}
+.rcard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px}
+.rcard.pass-r{background:var(--pbg);border-color:var(--pborder)}
+.rcard.done{border-color:rgba(42,122,79,.3)}
+.rh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rnum{font-size:12px;color:var(--t3);font-weight:700;min-width:20px}
+.fh-info{display:flex;flex-direction:column;min-width:55px}
+.fh-name{font-size:14px;font-weight:700}.fh-lbl{font-size:10px;color:var(--t3)}
+select{padding:7px 10px;border-radius:var(--rs);border:.5px solid var(--b2);background:var(--s2);color:var(--text);font-size:13px;outline:none;cursor:pointer;-webkit-appearance:none}
+select.tsel{flex:1;min-width:100px}select.tsel.pass{background:var(--pbg);border-color:var(--pborder);color:var(--pass)}
+.tricks-row{display:flex;gap:8px;margin-top:12px}
+.tc{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tc.fhcol .tlbl{font-weight:700;color:var(--text)}
+.tlbl{font-size:11px;color:var(--t2);width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+select.trdrop{width:100%;max-width:72px;text-align:center;font-size:16px;font-weight:600;padding:6px 4px}
+select.trdrop.pass{background:var(--pbg);border-color:var(--pborder);color:var(--pass)}
+.autov{font-size:20px;font-weight:700;min-height:36px;display:flex;align-items:center;justify-content:center;color:var(--t2)}
+.autov.pass{color:var(--pass)}.autov.dim{color:var(--t3)}
+.tpts{font-size:11px;color:var(--t3)}
+/* Chart */
+.chart-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.chart-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t2);margin-bottom:10px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:12px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* Summary */
+.win-banner{background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--r);padding:20px;text-align:center;margin-bottom:14px}
+.win-crown{font-size:44px;display:block;margin-bottom:6px}
+.win-lbl{font-size:11px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.win-name{font-size:26px;font-weight:800;color:var(--gold)}
+.ins-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.ins-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t2);margin-bottom:12px}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border);font-size:14px}
+.irow:last-child{border-bottom:none}
+.iname{font-weight:600}
+.ibest{color:var(--green);font-weight:700}.iworst{color:var(--red)}
+.bar-w{width:60px;height:5px;background:var(--s2);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
+.bar-f{height:100%;border-radius:3px;background:var(--t3)}.bar-f.best{background:var(--green)}
+.dec-card{background:var(--bbg);border:.5px solid var(--bborder);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.dec-card.pass{background:var(--pbg);border-color:var(--pborder)}
+.dec-ttl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+.dec-card.pass .dec-ttl{color:var(--pass)}
+.dec-body{font-size:14px;line-height:1.55}
+.hint{font-size:12px;color:var(--t2);margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);line-height:1.4}
+/* Stats */
+.stabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.stab{padding:7px 14px;border-radius:20px;font-size:13px;border:.5px solid var(--border);background:var(--s2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.stab.active{background:var(--text);color:var(--bg);border-color:transparent}
+.stat3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.statc{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.stv{font-size:24px;font-weight:700;margin-bottom:4px}.stl{font-size:11px;color:var(--t2)}
+.tblwrap{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:8px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);border-bottom:.5px solid var(--border);background:var(--s2)}
+.tbl th.r,.tbl td.r{text-align:right}
+.tbl td{padding:9px 8px;border-bottom:.5px solid var(--border)}.tbl tr:last-child td{border-bottom:none}
+.tbl tr.highlight td{background:var(--gbg);color:var(--gold);font-weight:600}
+.gtb{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;border:.5px solid var(--border)}
+.gtb.pass{background:var(--pbg);color:var(--pass);border-color:var(--pborder)}
+.sub{font-size:11px;color:var(--t3);margin-left:4px}
+/* History */
+.hcard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s}
+.hcard:active{opacity:.7}
+.hcard:hover{border-color:var(--b2)}
+.hhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hdate{font-size:12px;color:var(--t3)}.hwinner{font-size:13px;font-weight:700;color:var(--gold)}
+.hpl{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:.5px solid var(--border)}
+.hpl:last-child{border-bottom:none}.hpl.winner{font-weight:700;color:var(--gold)}
+.htap{font-size:11px;color:var(--t3);margin-top:8px;text-align:right}
+.empty{text-align:center;padding:48px 0;color:var(--t2);font-size:14px}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:560px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.modal-sub{font-size:14px;color:var(--t2);margin-bottom:20px;line-height:1.5}
+.modal-btns{display:flex;flex-direction:column;gap:10px}
+/* Nav */
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:.5px solid var(--border);display:flex;justify-content:center;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;max-width:140px;padding:10px 8px 12px;text-align:center;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--t3);-webkit-tap-highlight-color:transparent}
+.nb.active{color:var(--text)}.ni{font-size:20px;display:block;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<div class="nav">
+  <div class="nb" id="nb-game"    onclick="navTo('game')">   <span class="ni">🃏</span>SPEL</div>
+  <div class="nb" id="nb-history" onclick="navTo('history')"><span class="ni">📋</span>HISTORIK</div>
+  <div class="nb" id="nb-stats"   onclick="navTo('stats')">  <span class="ni">📊</span>STATISTIK</div>
+</div>
+<script>
+const GT=["Spel","Pass","Spader","Valfri"],TT=13;
+const PCOLS=["var(--c0)","var(--c1)","var(--c2)"];
+const load=(k,d)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d}catch{return d}};
+const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const fmt=n=>(n>0?"+":"")+n;
+const scls=n=>n>0?"pos":n<0?"neg":"";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tscore=(t,type)=>type==="Pass"?-Math.abs(t):t;
+const ptotal=(p,g)=>(g?.rounds||[]).reduce((s,r)=>{const t=parseInt(r.tricks[p]);return s+(isNaN(t)?0:tscore(t,r.type))},0);
+const tricksOk=v=>v!==null&&v!==""&&v!==undefined&&!isNaN(parseInt(v));
+const roundDone=(r,ps)=>!!r.type&&ps.every(p=>tricksOk(r.tricks[p]));
+const countDone=g=>(g?.rounds||[]).filter(r=>roundDone(r,g.players)).length;
+const gameDone=g=>countDone(g)===12;
+
+// ── Demo data ─────────────────────────────────────────────────────────────────
+const DEMO=[
+  {id:1744473600000,date:"2026-04-12",players:["Simon","Anton","Martin"],winner:"Anton",
+   finalScores:{Simon:23,Anton:41,Martin:14},rounds:[
+    {id:1,forhand:"Simon", type:"Spel",   tricks:{Simon:5,Anton:5,Martin:3}},
+    {id:2,forhand:"Anton", type:"Spader", tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:3,forhand:"Martin",type:"Pass",   tricks:{Simon:3,Anton:2,Martin:8}},
+    {id:4,forhand:"Simon", type:"Pass",   tricks:{Simon:6,Anton:2,Martin:5}},
+    {id:5,forhand:"Anton", type:"Spel",   tricks:{Simon:4,Anton:6,Martin:3}},
+    {id:6,forhand:"Martin",type:"Spader", tricks:{Simon:3,Anton:5,Martin:5}},
+    {id:7,forhand:"Simon", type:"Valfri", tricks:{Simon:6,Anton:4,Martin:3}},
+    {id:8,forhand:"Anton", type:"Pass",   tricks:{Simon:4,Anton:3,Martin:6}},
+    {id:9,forhand:"Martin",type:"Valfri", tricks:{Simon:4,Anton:5,Martin:4}},
+    {id:10,forhand:"Simon",type:"Spader", tricks:{Simon:5,Anton:4,Martin:4}},
+    {id:11,forhand:"Anton",type:"Valfri", tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:12,forhand:"Martin",type:"Spel",  tricks:{Simon:3,Anton:5,Martin:5}}]},
+  {id:1745078400000,date:"2026-04-19",players:["Simon","Anton","Martin"],winner:"Anton",
+   finalScores:{Simon:22,Anton:38,Martin:18},rounds:[
+    {id:1,forhand:"Simon", type:"Pass",   tricks:{Simon:5,Anton:3,Martin:5}},
+    {id:2,forhand:"Anton", type:"Spel",   tricks:{Simon:4,Anton:6,Martin:3}},
+    {id:3,forhand:"Martin",type:"Spader", tricks:{Simon:3,Anton:4,Martin:6}},
+    {id:4,forhand:"Simon", type:"Spel",   tricks:{Simon:5,Anton:5,Martin:3}},
+    {id:5,forhand:"Anton", type:"Pass",   tricks:{Simon:5,Anton:3,Martin:5}},
+    {id:6,forhand:"Martin",type:"Valfri", tricks:{Simon:4,Anton:4,Martin:5}},
+    {id:7,forhand:"Simon", type:"Spader", tricks:{Simon:6,Anton:4,Martin:3}},
+    {id:8,forhand:"Anton", type:"Valfri", tricks:{Simon:3,Anton:8,Martin:2}},
+    {id:9,forhand:"Martin",type:"Pass",   tricks:{Simon:4,Anton:2,Martin:7}},
+    {id:10,forhand:"Simon",type:"Valfri", tricks:{Simon:5,Anton:4,Martin:4}},
+    {id:11,forhand:"Anton",type:"Spader", tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:12,forhand:"Martin",type:"Spel",  tricks:{Simon:3,Anton:4,Martin:6}}]},
+  {id:1745683200000,date:"2026-04-26",players:["Simon","Anton","Martin"],winner:"Anton",
+   finalScores:{Simon:25,Anton:40,Martin:13},rounds:[
+    {id:1,forhand:"Simon", type:"Valfri", tricks:{Simon:6,Anton:4,Martin:3}},
+    {id:2,forhand:"Anton", type:"Spel",   tricks:{Simon:3,Anton:8,Martin:2}},
+    {id:3,forhand:"Martin",type:"Pass",   tricks:{Simon:3,Anton:2,Martin:8}},
+    {id:4,forhand:"Simon", type:"Spel",   tricks:{Simon:6,Anton:4,Martin:3}},
+    {id:5,forhand:"Anton", type:"Spader", tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:6,forhand:"Martin",type:"Valfri", tricks:{Simon:4,Anton:4,Martin:5}},
+    {id:7,forhand:"Simon", type:"Pass",   tricks:{Simon:4,Anton:3,Martin:6}},
+    {id:8,forhand:"Anton", type:"Valfri", tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:9,forhand:"Martin",type:"Spel",   tricks:{Simon:4,Anton:4,Martin:5}},
+    {id:10,forhand:"Simon",type:"Spader", tricks:{Simon:5,Anton:4,Martin:4}},
+    {id:11,forhand:"Anton",type:"Pass",   tricks:{Simon:5,Anton:2,Martin:6}},
+    {id:12,forhand:"Martin",type:"Spader",tricks:{Simon:3,Anton:5,Martin:5}}]},
+  {id:1746288000000,date:"2026-05-03",players:["Simon","Anton","Martin"],winner:"Simon & Martin",
+   finalScores:{Simon:28,Anton:22,Martin:28},rounds:[
+    {id:1,forhand:"Simon", type:"Spel",   tricks:{Simon:7,Anton:4,Martin:2}},
+    {id:2,forhand:"Anton", type:"Spel",   tricks:{Simon:3,Anton:5,Martin:5}},
+    {id:3,forhand:"Martin",type:"Spel",   tricks:{Simon:2,Anton:2,Martin:9}},
+    {id:4,forhand:"Simon", type:"Pass",   tricks:{Simon:2,Anton:7,Martin:4}},
+    {id:5,forhand:"Anton", type:"Pass",   tricks:{Simon:2,Anton:3,Martin:8}},
+    {id:6,forhand:"Martin",type:"Pass",   tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:7,forhand:"Simon", type:"Spader", tricks:{Simon:5,Anton:4,Martin:4}},
+    {id:8,forhand:"Anton", type:"Spader", tricks:{Simon:3,Anton:6,Martin:4}},
+    {id:9,forhand:"Martin",type:"Spader", tricks:{Simon:3,Anton:4,Martin:6}},
+    {id:10,forhand:"Simon",type:"Valfri", tricks:{Simon:6,Anton:3,Martin:4}},
+    {id:11,forhand:"Anton",type:"Valfri", tricks:{Simon:3,Anton:7,Martin:3}},
+    {id:12,forhand:"Martin",type:"Valfri",tricks:{Simon:3,Anton:4,Martin:6}}]}
+];
+
+// ── Players ───────────────────────────────────────────────────────────────────
+function mkP(name){return{name,gamesPlayed:0,wins:0,positions:{1:0,2:0,3:0},byType:Object.fromEntries(GT.map(gt=>[gt,{asForhand:{rounds:0,totalTricks:0},asOther:{rounds:0,totalTricks:0}}]))}}
+function fixP(pr){
+  if(!pr.positions)pr.positions={1:0,2:0,3:0};
+  GT.forEach(gt=>{if(!pr.byType[gt])pr.byType[gt]={asForhand:{rounds:0,totalTricks:0},asOther:{rounds:0,totalTricks:0}}});
+  return pr;
+}
+function getP(name){if(!pdb[name])pdb[name]=mkP(name);return fixP(pdb[name])}
+
+function getPositions(ps,fs){
+  const sorted=[...ps].sort((a,b)=>fs[b]-fs[a]);
+  const pos={};let p=1;
+  for(let i=0;i<sorted.length;){
+    let j=i;while(j<sorted.length&&fs[sorted[j]]===fs[sorted[i]])j++;
+    for(let k=i;k<j;k++)pos[sorted[k]]=p;
+    p=j+1;i=j;
+  }
+  return pos;
+}
+
+function computeStats(games){
+  const db={};
+  (games||[]).forEach(g=>{
+    if(!g?.players||!g?.finalScores)return;
+    const maxS=Math.max(...g.players.map(p=>+(g.finalScores[p]||0)));
+    const positions=getPositions(g.players,g.finalScores);
+    g.players.forEach(p=>{
+      if(!db[p])db[p]=mkP(p);fixP(db[p]);
+      db[p].gamesPlayed++;
+      if(+(g.finalScores[p]||0)===maxS)db[p].wins++;
+      const pos=positions[p];if(pos>=1&&pos<=3)db[p].positions[pos]++;
+      (g.rounds||[]).forEach(r=>{
+        if(!r.type)return;
+        const tv=parseInt(r.tricks?.[p]);if(isNaN(tv))return;
+        const key=r.forhand===p?"asForhand":"asOther";
+        db[p].byType[r.type][key].rounds++;db[p].byType[r.type][key].totalTricks+=tv;
+      });
+    });
+  });
+  return db;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+let hist=load("bsk8_hist",null),pdb=load("bsk8_pdb",null),game=load("bsk8_game",null);
+if(!hist){hist=DEMO;pdb=computeStats(DEMO);store("bsk8_hist",hist);store("bsk8_pdb",pdb)}
+if(!pdb){pdb=computeStats(hist);store("bsk8_pdb",pdb)}
+
+let screen=game?"game":"setup",spArr=["","",""],statTab="overview",detailRec=null;
+
+function newGame(ps){return{players:ps,rounds:Array.from({length:12},(_,i)=>({id:i+1,forhand:ps[i%3],type:"",tricks:Object.fromEntries(ps.map(p=>[p,""]))})),usedTypes:Object.fromEntries(ps.map(p=>[p,[]]))}}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+function buildChart(g){
+  const ps=g.players;
+  const done=g.rounds.filter(r=>roundDone(r,ps));
+  if(done.length===0)return`<div style="text-align:center;padding:16px;font-size:13px;color:var(--t3)">Inga rundor klara ännu</div>`;
+  const cum=Object.fromEntries(ps.map(p=>[p,[0]]));
+  done.forEach(r=>ps.forEach(p=>{const last=cum[p][cum[p].length-1];const t=parseInt(r.tricks[p]);cum[p].push(last+(isNaN(t)?0:tscore(t,r.type)))}));
+  const W=340,H=150,pL=30,pR=14,pT=12,pB=22;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  const allV=Object.values(cum).flat();
+  let minY=Math.min(0,...allV),maxY=Math.max(0,...allV);
+  if(minY===maxY){minY-=5;maxY+=5}
+  const yR=maxY-minY;
+  const xP=i=>pL+(i/12)*cW;
+  const yP=v=>pT+cH-((v-minY)/yR)*cH;
+  // y-axis ticks
+  const step=yR>60?20:yR>30?10:yR>15?5:2;
+  const t0=Math.ceil(minY/step)*step;
+  const ticks=[];for(let v=t0;v<=maxY;v+=step)ticks.push(v);
+  const gridSVG=ticks.map(v=>{const y=yP(v);const zero=v===0;return`<line x1="${pL}" y1="${y.toFixed(1)}" x2="${W-pR}" y2="${y.toFixed(1)}" stroke="currentColor" opacity="${zero?.15:.06}" stroke-width="${zero?1:.5}"/>
+<text x="${(pL-3).toFixed(0)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="8.5" fill="currentColor" opacity=".4">${v}</text>`}).join('');
+  const xLabels=Array.from({length:13},(_,i)=>i===0?'':`<text x="${xP(i).toFixed(1)}" y="${(H-pB+13).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".4">${i}</text>`).join('');
+  const linesSVG=ps.map((p,pi)=>{const pts=cum[p];const d=pts.map((v,i)=>`${i===0?'M':'L'}${xP(i).toFixed(1)},${yP(v).toFixed(1)}`).join(' ');const last=pts[pts.length-1];const lx=xP(pts.length-1),ly=yP(last);return`<path d="${d}" fill="none" stroke="${PCOLS[pi]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+${pts.map((v,i)=>i===0?'':`<circle cx="${xP(i).toFixed(1)}" cy="${yP(v).toFixed(1)}" r="3" fill="${PCOLS[pi]}"/>`).join('')}
+<text x="${(lx+4).toFixed(1)}" y="${(ly+4).toFixed(1)}" font-size="10" fill="${PCOLS[pi]}" font-weight="bold">${last>0?"+":""}${last}</text>`}).join('');
+  const legend=ps.map((p,pi)=>`<div class="chart-legend-item"><div class="legend-dot" style="background:${PCOLS[pi]}"></div>${esc(p)}</div>`).join('');
+  return`<div class="chart-card">
+  <div class="chart-title">Poängutveckling omgång för omgång</div>
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">${gridSVG}${xLabels}${linesSVG}</svg>
+  <div class="chart-legend">${legend}</div>
+</div>`;
+}
+
+// ── Analysis ──────────────────────────────────────────────────────────────────
+function analyze(g){
+  try{
+    const ps=g.players,fs=g.finalScores;
+    const maxS=Math.max(...ps.map(p=>+fs[p]));
+    const winners=ps.filter(p=>+fs[p]===maxS);
+    const rounds=g.rounds.filter(r=>roundDone(r,ps));
+    const rWins=Object.fromEntries(ps.map(p=>[p,0]));
+    rounds.forEach(r=>{const sc=ps.map(p=>({p,s:tscore(+r.tricks[p],r.type)}));const best=Math.max(...sc.map(x=>x.s));sc.filter(x=>x.s===best).forEach(x=>rWins[x.p]++)});
+    const ownPts=Object.fromEntries(ps.map(p=>[p,0]));
+    const othPts=Object.fromEntries(ps.map(p=>[p,0]));
+    rounds.forEach(r=>ps.forEach(p=>{const s=tscore(+r.tricks[p],r.type);if(r.forhand===p)ownPts[p]+=s;else othPts[p]+=s}));
+    const typeBest={};
+    GT.forEach(gt=>{const gr=rounds.filter(r=>r.type===gt);if(!gr.length){typeBest[gt]=null;return}const avgs=ps.map(p=>({p,avg:gr.reduce((s,r)=>s+tscore(+r.tricks[p],gt),0)/gr.length}));const best=avgs.reduce((a,b)=>a.avg>=b.avg?a:b);typeBest[gt]={player:best.p,avg:best.avg.toFixed(1)}});
+    const run=Object.fromEntries(ps.map(p=>[p,0]));
+    let decisive=null,maxGain=-Infinity;
+    rounds.forEach((r,ri)=>{ps.forEach(p=>run[p]+=tscore(+r.tricks[p],r.type));winners.forEach(w=>{const others=ps.filter(p=>p!==w);if(!others.length)return;const wS=tscore(+r.tricks[w],r.type);const oAvg=others.reduce((s,p)=>s+tscore(+r.tricks[p],r.type),0)/others.length;const gain=wS-oAvg;if(gain>maxGain){maxGain=gain;decisive={r,idx:ri+1,winner:w,gain:Math.round(gain*10)/10,wScore:wS,isPass:r.type==="Pass"}}})});
+    return{ok:true,g,ps,fs,maxS,winners,rWins,ownPts,othPts,typeBest,decisive};
+  }catch(e){console.error(e);return{ok:false,g,ps:g.players,fs:g.finalScores,maxS:Math.max(...g.players.map(p=>+g.finalScores[p])),winners:g.players.filter(p=>+g.finalScores[p]===Math.max(...g.players.map(q=>+g.finalScores[q])))}}
+}
+
+// ── Shared summary renderer ───────────────────────────────────────────────────
+function rSummaryContent(a){
+  if(!a.ok){return`<div class="win-banner"><span class="win-crown">🏆</span><div class="win-lbl">${a.winners.length>1?"Oavgjort":"Vinnare"}</div><div class="win-name">${a.winners.map(esc).join(" &amp; ")}</div></div>`}
+  const{g,ps,fs,maxS,winners,rWins,ownPts,typeBest,decisive}=a;
+  const sorted=[...ps].sort((x,y)=>fs[y]-fs[x]);
+  const maxRW=Math.max(...ps.map(p=>rWins[p]),1);
+  const maxO=Math.max(...ps.map(p=>ownPts[p]));
+  const minO=Math.min(...ps.map(p=>ownPts[p]));
+  const bestO=ps.reduce((a,b)=>ownPts[a]>=ownPts[b]?a:b);
+  const worstO=ps.reduce((a,b)=>ownPts[a]<=ownPts[b]?a:b);
+  let decHTML="";
+  if(decisive){const body=decisive.isPass?`Omgång <strong>${decisive.idx}</strong> – <strong>${esc(decisive.r.forhand)}</strong> valde <strong>Pass</strong>. ${esc(decisive.winner)} tog bara ${decisive.r.tricks[decisive.winner]} stick (${fmt(decisive.wScore)} p).`:`Omgång <strong>${decisive.idx}</strong> – <strong>${esc(decisive.r.forhand)}</strong> spelade <strong>${decisive.r.type}</strong>. ${esc(decisive.winner)} tog ${decisive.r.tricks[decisive.winner]} stick (${fmt(decisive.wScore)} p), ca <strong>${fmt(Math.round(decisive.gain))} p</strong> bättre än snittet.`;decHTML=`<div class="dec-card${decisive.isPass?" pass":""}"><div class="dec-ttl">${decisive.isPass?"🎯 Nyckelpassning":"⚡ Avgörande omgång"}</div><div class="dec-body">${body}</div></div>`}
+  return`
+  <div class="win-banner">
+    <span class="win-crown">${winners.length>1?"🤝":"🏆"}</span>
+    <div class="win-lbl">${winners.length>1?"Oavgjort":"Vinnare"}</div>
+    <div class="win-name">${winners.map(esc).join(" &amp; ")}</div>
+  </div>
+  ${buildChart(g)}
+  <div class="ins-card"><div class="ins-title">Slutresultat</div>
+    ${sorted.map((p,i)=>`<div class="irow"><span class="iname">${["🥇","🥈","🥉"][i]||""} ${esc(p)}</span><span style="font-size:18px;font-weight:700" class="${scls(fs[p])}">${fmt(fs[p])} p</span></div>`).join("")}
+  </div>
+  <div class="ins-card"><div class="ins-title">Rundvinster</div>
+    ${ps.map(p=>`<div class="irow"><span class="iname">${esc(p)}</span>
+    <span style="display:flex;align-items:center;gap:8px"><span class="${rWins[p]===maxRW?"ibest":""}">${rWins[p]} av 12</span>
+    <span class="bar-w"><span class="bar-f${rWins[p]===maxRW?" best":""}" style="width:${Math.round(rWins[p]/12*100)}%"></span></span></span></div>`).join("")}
+  </div>
+  <div class="ins-card"><div class="ins-title">Egna val – poäng som förhand</div>
+    ${ps.map(p=>`<div class="irow"><span class="iname">${esc(p)}</span><span class="${ownPts[p]===maxO?"ibest":ownPts[p]===minO&&minO<maxO?"iworst":""}">${fmt(ownPts[p])} p</span></div>`).join("")}
+    ${maxO-minO>=5?`<div class="hint">💡 <strong>${esc(bestO)}</strong> fick ut ${fmt(ownPts[bestO])} p på sina egna val – ${maxO-minO} p mer än <strong>${esc(worstO)}</strong>.</div>`:""}
+  </div>
+  <div class="ins-card"><div class="ins-title">Bäst per speltyp</div>
+    ${GT.map(gt=>{const tb=typeBest[gt];if(!tb)return"";return`<div class="irow"><span><span class="gtb${gt==="Pass"?" pass":""}">${gt}</span></span><span><span class="ibest">${esc(tb.player)}</span><span class="sub">snitt ${tb.avg} stick</span></span></div>`}).join("")}
+  </div>
+  ${decHTML}`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  document.getElementById("app").innerHTML=
+    screen==="setup"  ?rSetup()  :screen==="game"   ?rGame()  :
+    screen==="summary"?rSummary():screen==="history" ?rHist()  :
+    screen==="detail" ?rDetail() :rStats();
+  ["game","history","stats"].forEach(s=>{
+    const el=document.getElementById("nb-"+s);
+    if(el)el.className="nb"+((screen===s||(s==="game"&&(screen==="setup"||screen==="summary"))||(s==="history"&&screen==="detail"))?" active":"");
+  });
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function rSetup(){
+  const ex=Object.keys(pdb).sort();
+  return`<div class="page"><div class="ph"><h1>Bismarck</h1></div>
+  <div class="sec">Välj spelare (3 st)</div>
+  ${[0,1,2].map(i=>`<div class="slot"><div class="slot-lbl">Spelare ${i+1}</div>
+    <input type="text" id="pi${i}" value="${esc(spArr[i])}" placeholder="Skriv ett namn…" oninput="spArr[${i}]=this.value">
+    ${ex.length?`<div class="chips">${ex.map(n=>`<div class="chip${spArr[i]===n?" active":""}" onclick="pickP(${i},'${esc(n)}')">${esc(n)}</div>`).join("")}</div>`:""}</div>`).join("")}
+  <div class="btn btn-primary" onclick="startGame()">Starta spel</div>
+  ${game?`<div class="btn btn-primary" style="background:var(--s2);color:var(--text);border:.5px solid var(--b2)" onclick="screen='game';render()">↩ Fortsätt pågående spel</div>`:""}
+  </div>`;
+}
+
+// ── GAME ──────────────────────────────────────────────────────────────────────
+function rGame(){
+  if(!game){screen="setup";return rSetup()}
+  const ps=game.players,tots=ps.map(p=>ptotal(p,game)),max=Math.max(...tots);
+  const nd=countDone(game),done=nd===12;
+  return`<div class="page">
+  <div class="ph"><h2>Pågående spel</h2><div class="ha"><div class="btn btn-sm btn-ghost" onclick="showAbandon()">Avbryt</div></div></div>
+  <div class="scards" style="grid-template-columns:repeat(3,1fr)">
+    ${ps.map((p,i)=>{const t=tots[i],lead=t===max&&max!==0;return`<div class="scard${lead?" leader":""}">
+      <div class="sc-n">${esc(p)}${lead?" ★":""}</div><div class="sc-t ${scls(t)}">${fmt(t)}</div>
+      <div class="sc-pips">${GT.map(gt=>`<span class="pip${(game.usedTypes[p]||[]).includes(gt)?" used":""}">${gt.slice(0,3)}</span>`).join("")}</div>
+    </div>`}).join("")}
+  </div>
+  ${buildChart(game)}
+  <div class="prog-card">
+    <div class="prog-row">
+      <div class="prog-info">
+        <div class="prog-title">${done?"✅ Alla rundor klara":nd+"/12 rundor ifyllda"}</div>
+        <div class="prog-sub">${done?"Tryck Avsluta för att se statistik":"Fyll i speltyp och stick för varje runda"}</div>
+      </div>
+      <div class="btn btn-gold" onclick="doFinish()" style="${!done?"opacity:.35;pointer-events:none":""}">🏆 Avsluta</div>
+    </div>
+    ${!done?`<div class="prog-bar"><div class="prog-fill" style="width:${Math.round(nd/12*100)}%"></div></div>`:""}
+  </div>
+  <div class="sec">Rundor</div>
+  ${game.rounds.map((r,ri)=>rRound(r,ri)).join("")}
+  </div>`;
+}
+
+function rRound(r,ri){
+  const ps=game.players,isPass=r.type==="Pass",comp=roundDone(r,ps);
+  const avail=GT.filter(gt=>!(game.usedTypes[r.forhand]||[]).includes(gt)||gt===r.type);
+  function drop(pi,name){
+    if(pi===ps.length-1){const v=r.tricks[name];return`<div class="autov${isPass?" pass":""}${!tricksOk(v)?" dim":""}">${tricksOk(v)?+v:"—"}</div>`}
+    const prevFilled=pi===0||ps.slice(0,pi).every(p=>tricksOk(r.tricks[p]));
+    if(!prevFilled)return`<div class="autov dim">—</div>`;
+    const prevSum=ps.slice(0,pi).reduce((s,p)=>{const t=parseInt(r.tricks[p]);return s+(isNaN(t)?0:t)},0);
+    const maxT=TT-prevSum;const cur=parseInt(r.tricks[name]);const sel=(!isNaN(cur)&&cur>=0&&cur<=maxT)?cur:-1;
+    return`<select class="trdrop${isPass?" pass":""}" onchange="setTricks(${ri},'${esc(name)}',this.value)"><option value="">—</option>${Array.from({length:maxT+1},(_,v)=>`<option value="${v}"${sel===v?" selected":""}>${v}</option>`).join("")}</select>`;
+  }
+  return`<div class="rcard${isPass?" pass-r":""}${comp?" done":""}">
+  <div class="rh">
+    <span class="rnum">${r.id}</span>
+    <div class="fh-info"><span class="fh-name">${esc(r.forhand)}</span><span class="fh-lbl">förhand</span></div>
+    <select class="tsel${isPass?" pass":""}" onchange="setType(${ri},this.value)"><option value="">Välj speltyp</option>${avail.map(gt=>`<option value="${gt}"${r.type===gt?" selected":""}>${gt}</option>`).join("")}</select>
+    ${comp?`<span style="color:var(--green);font-size:16px">✓</span>`:""}
+  </div>
+  ${r.type?`<div class="tricks-row">${ps.map((p,pi)=>{const t=parseInt(r.tricks[p]);const pts=!isNaN(t)?tscore(t,r.type):null;return`<div class="tc${p===r.forhand?" fhcol":""}"><div class="tlbl">${esc(p)}</div>${drop(pi,p)}${pts!==null?`<div class="tpts ${scls(pts)}">${fmt(pts)} p</div>`:""}</div>`}).join("")}</div>`:""}
+  </div>`;
+}
+
+// ── SUMMARY (post-game) ────────────────────────────────────────────────────────
+let lastSummary=null;
+function rSummary(){
+  if(!lastSummary){screen="history";return rHist()}
+  return`<div class="page">
+  <div class="ph"><h2>Resultat</h2><div class="ha"><div class="btn btn-sm" onclick="screen='setup';spArr=['','',''];render()">Nytt spel</div></div></div>
+  ${rSummaryContent(lastSummary)}
+  <div class="btn btn-primary" onclick="navTo('history')">Se historik</div>
+  </div>`;
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function rHist(){
+  const list=[...hist].reverse();
+  return`<div class="page">
+  <div class="ph"><h2>Historik</h2><span style="font-size:13px;color:var(--t2)">${list.length} spel</span></div>
+  ${!list.length?`<div class="empty">Inga avslutade spel ännu</div>`:
+  list.map(g=>{const mx=Math.max(...g.players.map(p=>g.finalScores[p]));return`<div class="hcard" onclick="openDetail(${g.id})">
+    <div class="hhdr"><span class="hdate">${g.date}</span><span class="hwinner">🏆 ${esc(g.winner)}</span></div>
+    ${g.players.map(p=>`<div class="hpl${g.finalScores[p]===mx?" winner":""}"><span>${esc(p)}</span><span class="${scls(g.finalScores[p])}">${fmt(g.finalScores[p])} p</span></div>`).join("")}
+    <div class="htap">Tryck för detaljer →</div>
+  </div>`}).join("")}
+  ${list.length?`<div class="btn btn-sm btn-ghost" onclick="clearHist()" style="margin-top:4px">Rensa historik</div>`:""}
+  </div>`;
+}
+
+// ── DETAIL (history game detail) ──────────────────────────────────────────────
+function rDetail(){
+  if(!detailRec){screen="history";return rHist()}
+  const a=analyze(detailRec);
+  return`<div class="page">
+  <div class="ph">
+    <div><div style="font-size:11px;color:var(--t3);margin-bottom:2px">${detailRec.date}</div><h2>Speldetaljer</h2></div>
+    <div class="btn btn-sm btn-ghost" onclick="screen='history';render()">← Tillbaka</div>
+  </div>
+  ${rSummaryContent(a)}
+  </div>`;
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function rStats(){
+  const names=Object.keys(pdb).sort();
+  const tabs=["overview",...names];
+  if(!tabs.includes(statTab))statTab="overview";
+
+  const tabHTML=`<div class="stabs">
+    ${tabs.map(t=>`<div class="stab${t===statTab?" active":""}" onclick="statTab='${esc(t)}';render()">${t==="overview"?"Översikt":esc(t)}</div>`).join("")}
+  </div>`;
+
+  if(statTab==="overview")return`<div class="page"><div class="ph"><h2>Statistik</h2></div>${tabHTML}${rStatsOverview(names)}</div>`;
+  const p=pdb[statTab];if(!p)return`<div class="page"><div class="ph"><h2>Statistik</h2></div>${tabHTML}</div>`;
+  return`<div class="page"><div class="ph"><h2>Statistik</h2></div>${tabHTML}${rStatsPlayer(p)}</div>`;
+}
+
+function rStatsOverview(names){
+  if(!names.length)return`<div class="empty">Avsluta ett spel för att se statistik.</div>`;
+  const totalGames=hist.length;
+  // Unique players across all games
+  const allPlayers=new Set(hist.flatMap(g=>g.players));
+
+  const rows=names.map(n=>{
+    const p=fixP(pdb[n]);
+    const wp=p.gamesPlayed>0?Math.round(p.wins/p.gamesPlayed*100):0;
+    return{n,p,wp};
+  }).sort((a,b)=>b.wp-a.wp||b.p.wins-a.p.wins);
+
+  const best=rows[0];
+
+  return`
+  <div class="stat3">
+    <div class="statc"><div class="stv">${totalGames}</div><div class="stl">Spel totalt</div></div>
+    <div class="statc"><div class="stv">${allPlayers.size}</div><div class="stl">Spelare</div></div>
+    <div class="statc"><div class="stv">${best?best.wp+"%":"-"}</div><div class="stl">Bäst vinstprocent</div></div>
+  </div>
+  ${best?`<div class="ins-card" style="margin-bottom:10px">
+    <div class="ins-title">Ledartavla</div>
+    <div class="irow" style="font-size:12px;color:var(--t2);padding-bottom:4px"><span>Spelare</span><span style="display:flex;gap:20px"><span>Spel</span><span>Vinst</span><span>V%</span><span>🥇</span><span>🥈</span><span>🥉</span></span></div>
+    ${rows.map((r,i)=>{const p=r.p;return`<div class="irow${i===0?" ibest":""}">
+      <span class="iname">${["🥇","🥈","🥉"][i]||"  "} ${esc(r.n)}</span>
+      <span style="display:flex;gap:20px;font-size:13px">
+        <span>${p.gamesPlayed}</span>
+        <span>${p.wins}</span>
+        <span class="${r.wp>=50?"ibest":""}">${r.wp}%</span>
+        <span style="color:var(--gold)">${p.positions[1]||0}</span>
+        <span style="color:var(--t2)">${p.positions[2]||0}</span>
+        <span style="color:var(--t3)">${p.positions[3]||0}</span>
+      </span>
+    </div>`}).join("")}
+  </div>`:""}
+  <div class="ins-card">
+    <div class="ins-title">Mest spelade speltyper (alla spel)</div>
+    ${(()=>{const counts=Object.fromEntries(GT.map(gt=>[gt,0]));hist.forEach(g=>(g.rounds||[]).forEach(r=>{if(r.type)counts[r.type]++}));const max=Math.max(...Object.values(counts));return GT.map(gt=>`<div class="irow"><span><span class="gtb${gt==="Pass"?" pass":""}">${gt}</span></span><span style="display:flex;align-items:center;gap:8px"><span class="${counts[gt]===max?"ibest":""}">${counts[gt]} rundor</span><span class="bar-w"><span class="bar-f${counts[gt]===max?" best":""}" style="width:${max>0?Math.round(counts[gt]/max*100):0}%"></span></span></span></div>`).join("")})()}
+  </div>`;
+}
+
+function rStatsPlayer(p){
+  fixP(p);
+  const wp=p.gamesPlayed>0?Math.round(p.wins/p.gamesPlayed*100):0;
+  const tot=p.positions[1]+p.positions[2]+p.positions[3];
+  return`
+  <div class="stat4">
+    <div class="statc"><div class="stv">${p.gamesPlayed}</div><div class="stl">Spelade</div></div>
+    <div class="statc"><div class="stv">${p.wins}</div><div class="stl">Vinster</div></div>
+    <div class="statc"><div class="stv">${wp}%</div><div class="stl">Vinstprocent</div></div>
+    <div class="statc"><div class="stv">${hist.filter(g=>g.players.includes(p.name)).length}</div><div class="stl">Spel med</div></div>
+  </div>
+  <div class="ins-card">
+    <div class="ins-title">Placeringar</div>
+    ${[[1,"🥇",p.positions[1]||0],[2,"🥈",p.positions[2]||0],[3,"🥉",p.positions[3]||0]].map(([pos,medal,count])=>{const pct=tot>0?Math.round(count/tot*100):0;return`<div class="irow"><span class="iname">${medal} ${pos===1?"1:a":pos===2?"2:a":"3:e"} plats</span><span style="display:flex;align-items:center;gap:8px"><span>${count} ggr${tot>0?" ("+pct+"%)":""}</span><span class="bar-w"><span class="bar-f${pos===1?" best":""}" style="width:${pct}%"></span></span></span></div>`}).join("")}
+  </div>
+  <div class="sec">Snitt stick per speltyp</div>
+  <div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Speltyp</th><th class="r">Som förhand</th><th class="r">Som annan</th></tr></thead>
+    <tbody>${GT.map(gt=>{const d=p.byType[gt]||{asForhand:{rounds:0,totalTricks:0},asOther:{rounds:0,totalTricks:0}};const fa=d.asForhand.rounds>0?(d.asForhand.totalTricks/d.asForhand.rounds).toFixed(1):"—";const oa=d.asOther.rounds>0?(d.asOther.totalTricks/d.asOther.rounds).toFixed(1):"—";return`<tr><td><span class="gtb${gt==="Pass"?" pass":""}">${gt}</span></td><td class="r">${fa}<span class="sub">(${d.asForhand.rounds})</span></td><td class="r">${oa}<span class="sub">(${d.asOther.rounds})</span></td></tr>`}).join("")}</tbody>
+  </table></div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function navTo(s){screen=s==="game"?(game?"game":"setup"):s;render()}
+function pickP(i,name){spArr[i]=name;render()}
+function openDetail(id){detailRec=hist.find(g=>g.id===id)||null;if(detailRec){screen="detail";render()}}
+
+function startGame(){
+  const names=[0,1,2].map(i=>(document.getElementById("pi"+i)?.value||spArr[i]||"").trim()||`Spelare ${i+1}`);
+  if(new Set(names).size<3){showMsg("Spelarna måste ha unika namn.");return}
+  names.forEach(n=>getP(n));game=newGame(names);store("bsk8_game",game);screen="game";render();
+}
+function setType(ri,type){
+  const r=game.rounds[ri],old=r.type;
+  if(old&&old!==type){const idx=(game.usedTypes[r.forhand]||[]).indexOf(old);if(idx>-1)game.usedTypes[r.forhand].splice(idx,1);game.players.forEach(p=>r.tricks[p]="")}
+  r.type=type;
+  if(type&&!(game.usedTypes[r.forhand]||[]).includes(type)){if(!game.usedTypes[r.forhand])game.usedTypes[r.forhand]=[];game.usedTypes[r.forhand].push(type)}
+  store("bsk8_game",game);render();
+}
+function setTricks(ri,player,val){
+  const r=game.rounds[ri],ps=game.players;
+  r.tricks[player]=val===""?"":parseInt(val);
+  const[p0,p1,p2]=ps;const t0=parseInt(r.tricks[p0]),t1=parseInt(r.tricks[p1]);
+  if(player===p0&&!isNaN(t0)&&!isNaN(t1)&&t0+t1>TT){r.tricks[p1]="";r.tricks[p2]=""}
+  if(ps.slice(0,-1).every(p=>tricksOk(r.tricks[p]))){
+    const sum=ps.slice(0,-1).reduce((s,p)=>s+parseInt(r.tricks[p]),0);r.tricks[p2]=Math.max(0,TT-sum);
+  }else{r.tricks[p2]=""}
+  store("bsk8_game",game);render();
+}
+
+function doFinish(){
+  const ps=game.players;
+  const fs=Object.fromEntries(ps.map(p=>[p,ptotal(p,game)]));
+  const maxS=Math.max(...Object.values(fs));
+  const winners=ps.filter(p=>fs[p]===maxS);
+  const positions=getPositions(ps,fs);
+  const rec={id:Date.now(),date:new Date().toLocaleDateString("sv-SE"),players:ps,winner:winners.join(" & "),finalScores:fs,rounds:JSON.parse(JSON.stringify(game.rounds))};
+  hist.push(rec);store("bsk8_hist",hist);
+  ps.forEach(p=>{
+    const pr=getP(p);pr.gamesPlayed++;
+    if(fs[p]===maxS)pr.wins++;
+    const pos=positions[p];if(pos>=1&&pos<=3)pr.positions[pos]++;
+    game.rounds.forEach(r=>{if(!r.type)return;const tv=parseInt(r.tricks[p]);if(isNaN(tv))return;const key=r.forhand===p?"asForhand":"asOther";pr.byType[r.type][key].rounds++;pr.byType[r.type][key].totalTricks+=tv});
+    pdb[p]=pr;
+  });
+  store("bsk8_pdb",pdb);
+  lastSummary=analyze(rec);
+  game=null;store("bsk8_game",null);screen="summary";render();
+}
+
+function showModal(html){document.getElementById("modal-root").innerHTML=`<div class="overlay" onclick="closeModal(event)">${html}</div>`}
+function closeModal(e){if(e.target.classList.contains("overlay"))document.getElementById("modal-root").innerHTML=""}
+function closeModalDirect(){document.getElementById("modal-root").innerHTML=""}
+function showMsg(msg){showModal(`<div class="modal"><div class="modal-title">⚠️</div><div class="modal-sub">${esc(msg)}</div><div class="modal-btns"><div class="btn btn-primary" onclick="closeModalDirect()">OK</div></div></div>`)}
+function showAbandon(){showModal(`<div class="modal"><div class="modal-title">Avbryt spel?</div><div class="modal-sub">Pågående spel sparas inte.</div><div class="modal-btns"><div class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="doAbandon()">Ja, avbryt</div><div class="btn btn-ghost" onclick="closeModalDirect()">Tillbaka</div></div></div>`)}
+function doAbandon(){game=null;store("bsk8_game",null);spArr=["","",""];closeModalDirect();screen="setup";render()}
+function clearHist(){showModal(`<div class="modal"><div class="modal-title">Rensa historik?</div><div class="modal-sub">All historik tas bort. Statistik påverkas inte.</div><div class="modal-btns"><div class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="doClearHist()">Rensa</div><div class="btn btn-ghost" onclick="closeModalDirect()">Avbryt</div></div></div>`)}
+function doClearHist(){hist=[];store("bsk8_hist",hist);closeModalDirect();render()}
+
+render();
+</script>
+</body>
+</html>
