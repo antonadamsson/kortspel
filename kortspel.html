@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kortspel</title>
+<style>
+/* ══════ GLOBAL RESET ══════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{min-height:100dvh;overscroll-behavior:none}
+
+
+/* ═══ LAUNCHER ═══ */
+:root {
+  --lbg: #0a0a0f;
+  --lcard: rgba(255,255,255,0.04);
+  --lborder: rgba(255,255,255,0.10);
+  --ltext: #f5f4f0;
+  --lsub: rgba(245,244,240,0.55);
+  --lfont: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+#screen-launcher {
+  display: none;
+  min-height: 100dvh;
+  background: var(--lbg);
+  font-family: var(--lfont);
+  color: var(--ltext);
+  -webkit-font-smoothing: antialiased;
+}
+#screen-launcher.active { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.2rem 3rem; }
+.launcher-hero { text-align: center; margin-bottom: 3rem; }
+.launcher-suits { font-size: 2.2rem; letter-spacing: .15em; margin-bottom: 1.2rem; animation: suitDrop .6s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes suitDrop { from{transform:scale(.4) translateY(-20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+.launcher-title { font-size: 2.4rem; font-weight: 800; letter-spacing: -.04em; margin-bottom: .5rem; }
+.launcher-sub { font-size: 1rem; color: var(--lsub); }
+.launcher-games { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 420px; }
+.game-card {
+  background: var(--lcard);
+  border: 1px solid var(--lborder);
+  border-radius: 20px;
+  padding: 1.6rem 1.5rem;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 1.2rem;
+  transition: background .18s, border-color .18s, transform .12s;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none; color: inherit;
+}
+.game-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
+.game-card:active { transform: scale(.97); }
+.game-card.active-game { border-color: rgba(255,255,255,0.35); }
+.gc-icon { font-size: 2.6rem; line-height: 1; flex-shrink: 0; }
+.gc-info { flex: 1; min-width: 0; }
+.gc-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .2rem; }
+.gc-desc { font-size: .82rem; color: var(--lsub); line-height: 1.45; }
+.gc-badge {
+  font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  padding: 3px 8px; border-radius: 20px;
+  background: rgba(52,199,89,.18); color: #34C759;
+  border: 1px solid rgba(52,199,89,.3);
+  white-space: nowrap; flex-shrink: 0;
+}
+.gc-arrow { font-size: 1.2rem; color: var(--lsub); flex-shrink: 0; }
+
+
+/* ══════ WHIST ══════ */
+#whist-root { display: none; }
+#whist-root.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   VARIABLER & RESET
+═══════════════════════════════════════════ */
+:root {
+  --blue:      #007AFF;
+  --blue-dk:   #0056CC;
+  --red:       #FF3B30;
+  --green:     #34C759;
+  --orange:    #FF9500;
+  --label:     #1C1C1E;
+  --label2:    #3C3C43;
+  --label3:    #8E8E93;
+  --fill:      #F2F2F7;
+  --fill2:     #FFFFFF;
+  --fill3:     #E5E5EA;
+  --sep:       rgba(60,60,67,0.13);
+  --t1:        #007AFF;
+  --t1-bg:     #E8F1FF;
+  --t2:        #FF3B30;
+  --t2-bg:     #FFECE8;
+  --r-sm:      10px;
+  --r-md:      16px;
+  --r-lg:      22px;
+  --sh:        0 2px 18px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05);
+  --sh-sm:     0 1px 6px rgba(0,0,0,0.07);
+  --font:      -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--fill);
+  color: var(--label);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* ═══════════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════════ */
+.screen { display: none; }
+.screen.active {
+  display: block;
+  animation: fadeUp .28s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════
+   NAV TAB BAR  (game + leaderboard)
+═══════════════════════════════════════════ */
+.tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: none;
+  background: rgba(242,242,247,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--sep);
+  padding: 6px 0 env(safe-area-inset-bottom,0);
+  z-index: 200;
+}
+.tab-bar.visible { display: flex; }
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  color: var(--label3);
+  font-size: .65rem;
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: .02em;
+  transition: color .15s;
+}
+.tab-btn .tab-icon { font-size: 1.3rem; line-height: 1; }
+.tab-btn.active { color: var(--blue); }
+
+/* ═══════════════════════════════════════════
+   SHARED COMPONENTS
+═══════════════════════════════════════════ */
+.page-wrap {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 1.4rem 1.1rem 6rem;
+}
+
+.card {
+  background: var(--fill2);
+  border-radius: var(--r-md);
+  padding: 1.2rem;
+  box-shadow: var(--sh-sm);
+}
+
+.section-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--label3);
+  margin-bottom: .8rem;
+}
+
+.btn-primary {
+  display: block; width: 100%;
+  padding: .88rem 1.4rem;
+  font-size: 1.05rem;
+  font-family: var(--font);
+  font-weight: 600;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  letter-spacing: -.01em;
+  box-shadow: 0 4px 14px rgba(0,122,255,.26);
+  transition: background .15s, transform .1s;
+  -webkit-appearance: none;
+}
+.btn-primary:hover  { background: var(--blue-dk); }
+.btn-primary:active { transform: scale(.98); box-shadow: none; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .5rem 1rem;
+  font-size: .85rem;
+  font-family: var(--font);
+  font-weight: 600;
+  background: none;
+  color: var(--blue);
+  border: none;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background .14s;
+}
+.btn-ghost:hover { background: rgba(0,122,255,.08); }
+
+.icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(120,120,128,.12);
+  color: var(--blue);
+  border: none; font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .14s;
+}
+.icon-btn:hover { background: rgba(120,120,128,.22); }
+.icon-btn.red   { color: var(--red); }
+
+/* text input */
+.txt-input {
+  width: 100%;
+  padding: .7rem .95rem;
+  font-size: 1rem;
+  font-family: var(--font);
+  border: 1.5px solid var(--sep);
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  color: var(--label);
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color .18s, background .18s;
+}
+.txt-input:focus { border-color: var(--blue); background: var(--fill2); }
+
+/* label above input */
+.field-label {
+  display: block;
+  font-size: .72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--label3);
+  margin-bottom: .28rem;
+}
+
+/* ═══════════════════════════════════════════
+   SETUP SCREEN
+═══════════════════════════════════════════ */
+#screen-setup .page-wrap { padding-top: 2rem; }
+
+.setup-hero {
+  text-align: center;
+  padding: .5rem 0 1.6rem;
+}
+.suit-row {
+  display: flex; justify-content: center; gap: .55rem;
+  font-size: 2rem; margin-bottom: .7rem;
+  animation: suitPop .55s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes suitPop {
+  from { transform: scale(.3); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.suit.red   { color: var(--red); }
+.suit.black { color: var(--label); }
+
+.app-title {
+  font-size: 2.1rem; font-weight: 700;
+  letter-spacing: -.04em; color: var(--label);
+}
+.app-sub { margin-top: .35rem; font-size: .95rem; color: var(--label3); }
+
+.team-block {
+  background: var(--fill2);
+  border-radius: var(--r-md);
+  padding: 1.1rem 1.1rem 1.3rem;
+  box-shadow: var(--sh-sm);
+}
+.team-hdr {
+  display: flex; align-items: center; gap: .45rem;
+  font-size: .88rem; font-weight: 700; margin-bottom: 1rem;
+}
+.team-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.team-dot.t1 { background: var(--t1); }
+.team-dot.t2 { background: var(--t2); }
+.team-hdr.t1 { color: var(--t1); }
+.team-hdr.t2 { color: var(--t2); }
+
+.dealer-badge {
+  background: var(--t1); color: #fff;
+  border-radius: 20px; padding: 1px 8px;
+  font-size: .65rem; font-weight: 700;
+  letter-spacing: .03em; text-transform: none;
+  margin-left: .3rem;
+}
+
+.name-fields { display: flex; flex-direction: column; gap: .75rem; }
+.name-field  { display: flex; flex-direction: column; }
+
+/* rules accordion */
+.rules-acc {
+  background: var(--fill2);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+}
+.rules-acc summary {
+  padding: .95rem 1.1rem;
+  font-size: .9rem; font-weight: 600;
+  color: var(--blue); cursor: pointer;
+  list-style: none;
+  display: flex; align-items: center; justify-content: space-between;
+  user-select: none;
+}
+.rules-acc summary::after { content: "›"; font-size: 1.2rem; transition: transform .2s; }
+.rules-acc[open] summary::after { transform: rotate(90deg); }
+.rules-body {
+  padding: 0 1.1rem 1.3rem;
+  border-top: 1px solid var(--sep);
+}
+.rules-body h3 {
+  font-size: .78rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--label3); margin: 1rem 0 .35rem;
+}
+.rules-body p  { font-size: .88rem; line-height: 1.65; color: var(--label2); }
+.rules-body ul { padding-left: 1.3rem; margin: .4rem 0; }
+.rules-body li { font-size: .88rem; line-height: 1.8; color: var(--label2); }
+
+/* ═══════════════════════════════════════════
+   GAME SCREEN
+═══════════════════════════════════════════ */
+.game-topbar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 1.1rem;
+  background: rgba(242,242,247,.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--sep);
+}
+.topbar-title { font-size: .98rem; font-weight: 700; letter-spacing: -.01em; }
+
+/* Score */
+.score-panel {
+  display: flex; align-items: center; gap: .6rem;
+  background: var(--fill2);
+  border-radius: var(--r-lg);
+  padding: 1.3rem 1.1rem;
+  box-shadow: var(--sh);
+}
+.score-side { flex: 1; text-align: center; }
+.score-team-lbl {
+  font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: .25rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.score-side.t1 .score-team-lbl { color: var(--t1); }
+.score-side.t2 .score-team-lbl { color: var(--t2); }
+.score-num {
+  font-size: 3.6rem; font-weight: 700;
+  letter-spacing: -.04em; line-height: 1;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1);
+}
+.score-side.t1 .score-num { color: var(--t1); }
+.score-side.t2 .score-num { color: var(--t2); }
+.score-num.bump { transform: scale(1.2); }
+.score-sep { font-size: 1.5rem; color: var(--sep); font-weight: 300; padding: 0 .1rem; }
+
+/* Dealer */
+.dealer-pill {
+  display: flex; align-items: center; gap: .7rem;
+  background: var(--fill2);
+  border-radius: var(--r-md);
+  padding: .85rem 1rem;
+  box-shadow: var(--sh-sm);
+}
+.dealer-icon { font-size: 1.45rem; line-height: 1; }
+.dealer-info { flex: 1; display: flex; flex-direction: column; }
+.dealer-lbl-sm {
+  font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--label3);
+}
+.dealer-nm { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; }
+.dealer-tag {
+  font-size: .72rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+}
+.dealer-tag.t1 { background: var(--t1-bg); color: var(--t1); }
+.dealer-tag.t2 { background: var(--t2-bg); color: var(--t2); }
+
+/* Turn order */
+.turn-order {
+  background: var(--fill2); border-radius: var(--r-md);
+  padding: .9rem 1rem; box-shadow: var(--sh-sm);
+}
+.turn-order-title {
+  font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--label3); margin-bottom: .65rem;
+}
+.turn-players {
+  display: flex; gap: .4rem; align-items: center; flex-wrap: nowrap;
+  overflow-x: auto; padding-bottom: .2rem;
+}
+.turn-player {
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+  flex-shrink: 0;
+}
+.turn-card {
+  width: 38px; height: 52px;
+  border-radius: 6px;
+  border: 1.5px solid var(--sep);
+  background: var(--fill2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem; box-shadow: var(--sh-sm);
+  position: relative;
+}
+.turn-card .card-suit-r { color: var(--red); }
+.turn-card .card-suit-b { color: var(--label); }
+.turn-card .badge-b {
+  position: absolute; top: 2px; right: 3px;
+  font-size: .52rem; color: var(--label3); font-weight: 700;
+}
+.turn-name {
+  font-size: .68rem; font-weight: 600; color: var(--label3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 52px; text-align: center;
+}
+.turn-arrow {
+  font-size: .9rem; color: var(--label3);
+  padding-bottom: 18px; flex-shrink: 0;
+}
+
+/* Segmented type buttons */
+.btn-seg-wrap { display: flex; gap: .5rem; }
+.btn-seg {
+  flex: 1; padding: .65rem .5rem;
+  font-size: .9rem; font-family: var(--font); font-weight: 600;
+  border: 2px solid var(--sep); border-radius: var(--r-sm);
+  background: var(--fill); color: var(--label3);
+  cursor: pointer; text-align: center;
+  transition: all .15s; -webkit-appearance: none;
+}
+.btn-seg.sel-kryp { border-color: var(--label); background: var(--fill3); color: var(--label); }
+.btn-seg.sel-spel { border-color: var(--red);   background: var(--t2-bg); color: var(--red); }
+
+/* Spel-lag selector */
+.spel-row { display: none; flex-direction: column; gap: .4rem; }
+.spel-row.visible { display: flex; }
+.spel-lag-wrap { display: flex; gap: .5rem; }
+.spel-lag-btn {
+  flex: 1; padding: .55rem .4rem;
+  font-size: .82rem; font-family: var(--font); font-weight: 600;
+  border: 2px solid var(--sep); border-radius: var(--r-sm);
+  background: var(--fill); color: var(--label3);
+  cursor: pointer; text-align: center;
+  transition: all .15s; -webkit-appearance: none;
+}
+.spel-lag-btn.active-t1 { border-color: var(--t1); background: var(--t1-bg); color: var(--t1); }
+.spel-lag-btn.active-t2 { border-color: var(--t2); background: var(--t2-bg); color: var(--t2); }
+
+/* Stick form row */
+.form-row { display: flex; flex-direction: column; gap: .75rem; }
+.form-row-h { display: flex; gap: .5rem; align-items: flex-end; }
+.add-field { flex: 1; display: flex; flex-direction: column; }
+.add-field input {
+  padding: .6rem .7rem; font-size: 1.4rem; font-weight: 600;
+  text-align: center;
+  border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+  background: var(--fill); color: var(--label);
+  outline: none; -webkit-appearance: none; font-family: var(--font);
+  transition: border-color .18s, background .18s; width: 100%;
+}
+.add-field input:focus { border-color: var(--blue); background: var(--fill2); }
+.add-vs { font-size: .8rem; color: var(--label3); padding-bottom: .85rem; flex-shrink: 0; }
+
+/* Score preview */
+.score-preview {
+  text-align: center; font-size: .82rem; font-weight: 600;
+  color: var(--label3); min-height: 1.4em;
+  padding: .15rem 0;
+}
+.score-preview span  { color: var(--label); }
+.score-preview .bonus { color: var(--orange); }
+
+/* History */
+.history-list { display: flex; flex-direction: column; gap: .48rem; }
+.empty-note { font-size: .88rem; color: var(--label3); text-align: center; padding: .8rem 0; }
+
+.hist-row {
+  display: flex; align-items: center;
+  padding: .6rem .85rem;
+  background: var(--fill);
+  border-radius: var(--r-sm);
+  gap: .7rem;
+  animation: slideIn .22s ease both;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hist-rnd { font-size: .7rem; font-weight: 600; color: var(--label3); min-width: 56px; }
+.hist-type {
+  font-size: .7rem; font-weight: 700;
+  padding: 1px 7px; border-radius: 20px; flex-shrink: 0;
+}
+.hist-type.kryp  { background: var(--fill3); color: var(--label3); }
+.hist-type.spel  { background: var(--t2-bg); color: var(--red); }
+.hist-type.upset { background: #fff3e0;      color: var(--orange); }
+.hist-chips { display: flex; gap: .55rem; flex: 1; justify-content: flex-end; }
+.chip {
+  font-size: .8rem; font-weight: 700;
+  padding: 2px 9px; border-radius: 20px;
+}
+.chip.t1   { background: var(--t1-bg); color: var(--t1); }
+.chip.t2   { background: var(--t2-bg); color: var(--t2); }
+.chip.zero { background: var(--fill3); color: var(--label3); }
+
+/* ═══════════════════════════════════════════
+   LEADERBOARD SCREEN
+═══════════════════════════════════════════ */
+.lb-topbar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 1.1rem;
+  background: rgba(242,242,247,.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--sep);
+}
+.lb-topbar-title { font-size: .98rem; font-weight: 700; letter-spacing: -.01em; }
+
+.lb-player-card {
+  background: var(--fill2);
+  border-radius: var(--r-md);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--sh-sm);
+  display: flex; align-items: center; gap: 1rem;
+  animation: slideIn .22s ease both;
+}
+.lb-rank {
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--label3); min-width: 28px; text-align: center;
+}
+.lb-rank.gold   { color: #F5A623; }
+.lb-rank.silver { color: #8E8E93; }
+.lb-rank.bronze { color: #A0522D; }
+
+.lb-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+
+.lb-info { flex: 1; min-width: 0; }
+.lb-name { font-size: 1rem; font-weight: 700; letter-spacing: -.01em; }
+.lb-meta { font-size: .75rem; color: var(--label3); margin-top: .15rem; }
+
+.lb-score {
+  font-size: 1.4rem; font-weight: 700;
+  letter-spacing: -.03em;
+}
+.lb-score.pos { color: var(--green); }
+.lb-score.neg { color: var(--red); }
+.lb-score.zero{ color: var(--label3); }
+
+.lb-game-history {
+  margin-top: .5rem;
+}
+.lb-game-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .45rem .5rem;
+  border-radius: 8px;
+  font-size: .78rem;
+}
+.lb-game-row:nth-child(odd) { background: var(--fill); }
+.lb-game-date { color: var(--label3); }
+.lb-game-pts  { font-weight: 700; }
+.lb-game-pts.pos  { color: var(--green); }
+.lb-game-pts.neg  { color: var(--red); }
+.lb-game-pts.zero { color: var(--label3); }
+
+.lb-expand-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: .75rem; font-weight: 600; color: var(--blue);
+  padding: .3rem 0; font-family: var(--font);
+  text-align: left;
+}
+
+.lb-empty {
+  text-align: center; color: var(--label3);
+  font-size: .9rem; padding: 2.5rem 0;
+}
+
+/* ═══════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════ */
+.gap-sm  { display: flex; flex-direction: column; gap: .7rem; }
+.gap-md  { display: flex; flex-direction: column; gap: 1rem; }
+.gap-lg  { display: flex; flex-direction: column; gap: 1.2rem; }
+.mt-sm   { margin-top: .7rem; }
+.mt-md   { margin-top: 1rem; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+
+/* ═══════════════════════════════════════════
+   WIN BANNER
+═══════════════════════════════════════════ */
+.win-banner {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: var(--r-lg);
+  padding: 1.4rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .8rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  animation: winPop .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+.win-banner.hidden { display: none; }
+
+@keyframes winPop {
+  from { transform: scale(.85); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.win-trophy { font-size: 2.6rem; line-height: 1; }
+.win-text   { text-align: center; }
+.win-title  { font-size: 1.4rem; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+.win-sub    { font-size: .8rem; color: rgba(255,255,255,.55); margin-top: .2rem; }
+
+.btn-save-game {
+  padding: .75rem 1.8rem;
+  font-size: .95rem; font-family: var(--font); font-weight: 700;
+  background: #F5A623; color: #fff;
+  border: none; border-radius: var(--r-md); cursor: pointer;
+  letter-spacing: -.01em;
+  box-shadow: 0 3px 12px rgba(245,166,35,.4);
+  transition: opacity .15s, transform .1s;
+  -webkit-appearance: none;
+}
+.btn-save-game:hover  { opacity: .88; }
+.btn-save-game:active { transform: scale(.97); }
+
+/* progress bar under score */
+.score-progress {
+  display: flex; gap: .5rem; align-items: center;
+  padding: 0 .4rem;
+}
+.prog-bar-wrap {
+  flex: 1; height: 5px; border-radius: 3px;
+  background: var(--fill3); overflow: hidden;
+}
+.prog-bar {
+  height: 100%; border-radius: 3px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+.prog-bar.t1 { background: var(--t1); }
+.prog-bar.t2 { background: var(--t2); }
+.prog-lbl {
+  font-size: .65rem; font-weight: 700; color: var(--label3);
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   LEADERBOARD – MATCH-BASED
+═══════════════════════════════════════════ */
+.lb-wins {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 52px;
+}
+.lb-wins-num {
+  font-size: 2rem; font-weight: 700; letter-spacing: -.04em;
+  color: var(--green); line-height: 1;
+}
+.lb-wins-lbl {
+  font-size: .65rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--label3);
+}
+.lb-win-bar-wrap {
+  height: 4px; background: var(--fill3); border-radius: 2px; overflow: hidden;
+}
+.lb-win-bar {
+  height: 100%; background: var(--green); border-radius: 2px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+}
+.lb-game-pts.neg-lb { color: var(--label3); }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --label:  #FFFFFF;
+    --label2: #EBEBF5;
+    --label3: #8E8E93;
+    --fill:   #1C1C1E;
+    --fill2:  #2C2C2E;
+    --fill3:  #3A3A3C;
+    --sep:    rgba(84,84,88,.55);
+    --t1-bg:  rgba(0,122,255,.18);
+    --t2-bg:  rgba(255,59,48,.18);
+  }
+  .game-topbar, .lb-topbar {
+    background: rgba(28,28,30,.88);
+  }
+  .tab-bar {
+    background: rgba(28,28,30,.88);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 400px) {
+  .app-title   { font-size: 1.75rem; }
+  .score-num   { font-size: 2.9rem; }
+  .page-wrap   { padding: 1rem .9rem 5.5rem; }
+}
+
+
+/* ══════ BISMARCK ══════ */
+#bsk-root { display: none; }
+#bsk-root.active { display: block; }
+#bsk-root{--bg:#f5f4f0;--surface:#fff;--s2:#eeecea;--border:rgba(0,0,0,.09);--b2:rgba(0,0,0,.18);--text:#1a1a18;--t2:#6b6a65;--t3:#aeada7;--green:#2a7a4f;--red:#b83030;--gold:#7a5e00;--gbg:#fdf5d8;--gborder:#d4b84a;--pass:#c0390a;--pbg:#fff4ee;--pborder:#f5c4ae;--blue:#1a5fa8;--bbg:#e8f0fa;--bborder:#a8c4e8;--r:12px;--rs:8px;--c0:#2a7a4f;--c1:#1a5fa8;--c2:#b03060;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;background:var(--bg);color:var(--text);min-height:100dvh;}
+@media(prefers-color-scheme:dark){#bsk-root{--bg:#181816;--surface:#222220;--s2:#2a2a27;--border:rgba(255,255,255,.09);--b2:rgba(255,255,255,.18);--text:#f0efe8;--t2:#9a9990;--t3:#5a5a55;--green:#4caf78;--red:#e06060;--gold:#d4a820;--gbg:#252010;--gborder:#8a7020;--pass:#e06040;--pbg:#281810;--pborder:#6a3020;--blue:#6aa3e0;--bbg:#141e30;--bborder:#2a4a70;--c0:#4caf78;--c1:#6aa3e0;--c2:#e07090;}}
+#bsk-root .page{max-width:560px;margin:0 auto;padding:16px 14px 80px}
+#bsk-root .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}
+#bsk-root h1{font-size:24px;font-weight:700}#bsk-root h2{font-size:18px;font-weight:600}
+#bsk-root .ha{display:flex;gap:8px}
+#bsk-root .btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:var(--rs);border:.5px solid var(--b2);background:var(--s2);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+#bsk-root .btn:active{opacity:.6}
+#bsk-root .btn-primary{background:var(--text);color:var(--bg);border-color:transparent;width:100%;font-size:15px;padding:14px;border-radius:var(--r);margin-top:8px;display:flex}
+#bsk-root .btn-gold{background:var(--gbg);color:var(--gold);border-color:var(--gborder)}
+#bsk-root .btn-sm{padding:6px 12px;font-size:12px}
+#bsk-root .btn-ghost{background:transparent;border-color:var(--border);color:var(--t2)}
+#bsk-root .sec{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin:18px 0 10px}
+#bsk-root .slot{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+#bsk-root .slot-lbl{font-size:11px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+#bsk-root input[type=text]{width:100%;padding:10px 12px;font-size:15px;border:.5px solid var(--border);border-radius:var(--rs);background:var(--s2);color:var(--text);outline:none}
+#bsk-root input[type=text]:focus{border-color:var(--b2)}
+#bsk-root .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#bsk-root .chip{padding:5px 12px;border-radius:20px;font-size:13px;border:.5px solid var(--border);background:var(--s2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#bsk-root .chip.active{background:var(--text);color:var(--bg);border-color:transparent}
+#bsk-root .scards{display:grid;gap:8px;margin-bottom:12px}
+#bsk-root .scard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+#bsk-root .scard.leader{border-color:var(--gborder);background:var(--gbg)}
+#bsk-root .sc-n{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bsk-root .sc-t{font-size:26px;font-weight:700;margin-bottom:6px}
+#bsk-root .sc-pips{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+#bsk-root .pip{font-size:9px;padding:2px 5px;border-radius:4px;border:.5px solid var(--border);color:var(--t3)}
+#bsk-root .pip.used{background:var(--s2);text-decoration:line-through;color:var(--t2)}
+#bsk-root .pos{color:var(--green)}#bsk-root .neg{color:var(--red)}
+#bsk-root .prog-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+#bsk-root .prog-row{display:flex;align-items:center;gap:12px}
+#bsk-root .prog-info{flex:1}#bsk-root .prog-title{font-size:14px;font-weight:600;margin-bottom:2px}#bsk-root .prog-sub{font-size:12px;color:var(--t2)}
+#bsk-root .prog-bar{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:10px}
+#bsk-root .prog-fill{height:100%;border-radius:3px;background:var(--green);transition:width .3s}
+#bsk-root .rcard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px}
+#bsk-root .rcard.pass-r{background:var(--pbg);border-color:var(--pborder)}
+#bsk-root .rcard.done{border-color:rgba(42,122,79,.3)}
+#bsk-root .rh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#bsk-root .rnum{font-size:12px;color:var(--t3);font-weight:700;min-width:20px}
+#bsk-root .fh-info{display:flex;flex-direction:column;min-width:55px}
+#bsk-root .fh-name{font-size:14px;font-weight:700}#bsk-root .fh-lbl{font-size:10px;color:var(--t3)}
+#bsk-root select{padding:7px 10px;border-radius:var(--rs);border:.5px solid var(--b2);background:var(--s2);color:var(--text);font-size:13px;outline:none;cursor:pointer;-webkit-appearance:none}
+#bsk-root select.tsel{flex:1;min-width:100px}#bsk-root select.tsel.pass{background:var(--pbg);border-color:var(--pborder);color:var(--pass)}
+#bsk-root .tricks-row{display:flex;gap:8px;margin-top:12px}
+#bsk-root .tc{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+#bsk-root .tc.fhcol .tlbl{font-weight:700;color:var(--text)}
+#bsk-root .tlbl{font-size:11px;color:var(--t2);width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bsk-root select.trdrop{width:100%;max-width:72px;text-align:center;font-size:16px;font-weight:600;padding:6px 4px}
+#bsk-root select.trdrop.pass{background:var(--pbg);border-color:var(--pborder);color:var(--pass)}
+#bsk-root .autov{font-size:20px;font-weight:700;min-height:36px;display:flex;align-items:center;justify-content:center;color:var(--t2)}
+#bsk-root .autov.pass{color:var(--pass)}#bsk-root .autov.dim{color:var(--t3)}
+#bsk-root .tpts{font-size:11px;color:var(--t3)}
+#bsk-root .chart-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+#bsk-root .chart-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t2);margin-bottom:10px}
+#bsk-root .chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#bsk-root .chart-legend-item{display:flex;align-items:center;gap:5px;font-size:12px}
+#bsk-root .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#bsk-root .win-banner{background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--r);padding:20px;text-align:center;margin-bottom:14px}
+#bsk-root .win-crown{font-size:44px;display:block;margin-bottom:6px}
+#bsk-root .win-lbl{font-size:11px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+#bsk-root .win-name{font-size:26px;font-weight:800;color:var(--gold)}
+#bsk-root .ins-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+#bsk-root .ins-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t2);margin-bottom:12px}
+#bsk-root .irow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border);font-size:14px}
+#bsk-root .irow:last-child{border-bottom:none}
+#bsk-root .iname{font-weight:600}
+#bsk-root .ibest{color:var(--green);font-weight:700}#bsk-root .iworst{color:var(--red)}
+#bsk-root .bar-w{width:60px;height:5px;background:var(--s2);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
+#bsk-root .bar-f{height:100%;border-radius:3px;background:var(--t3)}#bsk-root .bar-f.best{background:var(--green)}
+#bsk-root .dec-card{background:var(--bbg);border:.5px solid var(--bborder);border-radius:var(--r);padding:14px;margin-bottom:10px}
+#bsk-root .dec-card.pass{background:var(--pbg);border-color:var(--pborder)}
+#bsk-root .dec-ttl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+#bsk-root .dec-card.pass .dec-ttl{color:var(--pass)}
+#bsk-root .dec-body{font-size:14px;line-height:1.55}
+#bsk-root .hint{font-size:12px;color:var(--t2);margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);line-height:1.4}
+#bsk-root .stabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+#bsk-root .stab{padding:7px 14px;border-radius:20px;font-size:13px;border:.5px solid var(--border);background:var(--s2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#bsk-root .stab.active{background:var(--text);color:var(--bg);border-color:transparent}
+#bsk-root .stat3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+#bsk-root .stat4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+#bsk-root .statc{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+#bsk-root .stv{font-size:24px;font-weight:700;margin-bottom:4px}#bsk-root .stl{font-size:11px;color:var(--t2)}
+#bsk-root .tblwrap{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+#bsk-root .tbl{width:100%;border-collapse:collapse;font-size:13px}
+#bsk-root .tbl th{padding:8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);border-bottom:.5px solid var(--border);background:var(--s2)}
+#bsk-root .tbl th.r,#bsk-root .tbl td.r{text-align:right}
+#bsk-root .tbl td{padding:9px 8px;border-bottom:.5px solid var(--border)}#bsk-root .tbl tr:last-child td{border-bottom:none}
+#bsk-root .gtb{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;border:.5px solid var(--border)}
+#bsk-root .gtb.pass{background:var(--pbg);color:var(--pass);border-color:var(--pborder)}
+#bsk-root .sub{font-size:11px;color:var(--t3);margin-left:4px}
+#bsk-root .hcard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s}
+#bsk-root .hcard:active{opacity:.7}#bsk-root .hcard:hover{border-color:var(--b2)}
+#bsk-root .hhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#bsk-root .hdate{font-size:12px;color:var(--t3)}#bsk-root .hwinner{font-size:13px;font-weight:700;color:var(--gold)}
+#bsk-root .hpl{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:.5px solid var(--border)}
+#bsk-root .hpl:last-child{border-bottom:none}#bsk-root .hpl.winner{font-weight:700;color:var(--gold)}
+#bsk-root .htap{font-size:11px;color:var(--t3);margin-top:8px;text-align:right}
+#bsk-root .empty{text-align:center;padding:48px 0;color:var(--t2);font-size:14px}
+#bsk-root .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+#bsk-root .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:560px}
+#bsk-root .modal-title{font-size:18px;font-weight:700;margin-bottom:8px}
+#bsk-root .modal-sub{font-size:14px;color:var(--t2);margin-bottom:20px;line-height:1.5}
+#bsk-root .modal-btns{display:flex;flex-direction:column;gap:10px}
+#bsk-root .nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:.5px solid var(--border);display:flex;justify-content:center;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+#bsk-root .nb{flex:1;max-width:140px;padding:10px 8px 12px;text-align:center;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--t3);-webkit-tap-highlight-color:transparent}
+#bsk-root .nb.active{color:var(--text)}#bsk-root .ni{font-size:20px;display:block;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LAUNCHER — spelval
+══════════════════════════════════════ -->
+<div id="screen-launcher" class="active">
+  <div class="launcher-hero">
+    <div class="launcher-suits">♠ ♥ ♦ ♣</div>
+    <h1 class="launcher-title">Kortspel</h1>
+    <p class="launcher-sub">Välj spel för att börja</p>
+  </div>
+  <div class="launcher-games">
+    <div class="game-card" id="gc-whist" onclick="launchWhist()">
+      <span class="gc-icon">🃏</span>
+      <div class="gc-info">
+        <div class="gc-title">Fyrmannawhist</div>
+        <div class="gc-desc">Lag mot lag · Kryp eller Spel · Först till 13 poäng vinner</div>
+      </div>
+      <span class="gc-arrow">›</span>
+    </div>
+    <div class="game-card" id="gc-bsk" onclick="launchBSK()">
+      <span class="gc-icon">⚓</span>
+      <div class="gc-info">
+        <div class="gc-title">Bismarck</div>
+        <div class="gc-desc">3 spelare · Spel / Pass / Spader / Valfri · Statistik &amp; historik</div>
+      </div>
+      <span class="gc-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FYRMANNAWHIST
+══════════════════════════════════════ -->
+<div id="whist-root">
+<!-- ═══════════════════════════════════════════════
+     SCREEN 1 – SETUP
+═══════════════════════════════════════════════ -->
+<div id="screen-setup" class="screen">
+  <div class="page-wrap gap-lg">
+
+    <div class="setup-hero">
+      <div class="suit-row" aria-hidden="true">
+        <span class="suit black">♠</span>
+        <span class="suit red">♥</span>
+        <span class="suit red">♦</span>
+        <span class="suit black">♣</span>
+      </div>
+      <h1 class="app-title">Fyrmannawhist</h1>
+      <p class="app-sub">Ange spelarnas namn för att börja</p>
+    </div>
+
+    <!-- Lag 1 -->
+    <div class="team-block">
+      <div class="team-hdr t1">
+        <span class="team-dot t1"></span>Lag 1
+      </div>
+      <div class="name-fields">
+        <div class="name-field">
+          <label class="field-label" for="p1">
+            Spelare 1 <span class="dealer-badge">Blandar först</span>
+          </label>
+          <input class="txt-input" type="text" id="p1" placeholder="Namn…" maxlength="20" autocomplete="off" />
+        </div>
+        <div class="name-field">
+          <label class="field-label" for="p3">Spelare 3</label>
+          <input class="txt-input" type="text" id="p3" placeholder="Namn…" maxlength="20" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Lag 2 -->
+    <div class="team-block">
+      <div class="team-hdr t2">
+        <span class="team-dot t2"></span>Lag 2
+      </div>
+      <div class="name-fields">
+        <div class="name-field">
+          <label class="field-label" for="p2">Spelare 2</label>
+          <input class="txt-input" type="text" id="p2" placeholder="Namn…" maxlength="20" autocomplete="off" />
+        </div>
+        <div class="name-field">
+          <label class="field-label" for="p4">Spelare 4</label>
+          <input class="txt-input" type="text" id="p4" placeholder="Namn…" maxlength="20" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="start-btn">Starta spel →</button>
+
+    <!-- Regler -->
+    <details class="rules-acc">
+      <summary>Spelets regler</summary>
+      <div class="rules-body">
+
+        <h3>Lag</h3>
+        <p>Fyra spelare i två fasta lag. De som sitter mitt emot varandra spelar ihop.
+        Lag 1 = Spelare 1 + Spelare 3. Lag 2 = Spelare 2 + Spelare 4.</p>
+
+        <h3>Kryp eller Spel — välj med kort</h3>
+        <p>Blandaren visar ett kort i taget för varje spelare medsols — blandaren sist. Kortfärgen avgör:</p>
+        <ul>
+          <li><strong style="color:#FF3B30">Rött kort (♥♦) = Spel</strong> — spelaren väljer att utmana.</li>
+          <li><strong>Svart kort (♠♣) = Pass</strong> — spelaren passar.</li>
+        </ul>
+        <p>Så fort någon visar ett rött kort blir det <strong>Spel</strong> och turordningen avslutas. Om alla visar svarta kort är det <strong>Kryp</strong>. Ingen trumffärg väljs — vid Spel spelas det ändå utan trumf.</p>
+
+        <h3>En omgång</h3>
+        <p>Varje spelare får 13 kort. Spelet går ut på att vinna stick (totalt 13 st). Den som lägger det högsta kortet i den utspelda färgen vinner sticket.</p>
+
+        <h3>Poäng vid Kryp</h3>
+        <p>Vid Kryp vill man ta <strong>så få stick som möjligt</strong>. Det lag som tar <em>färst</em> stick vinner omgången. Poäng = 7 minus eget antal stick (hur många under 7 man är). Motståndarna får 0 p. Inga minuspoäng.</p>
+        <ul>
+          <li>6 stick → <strong>+1 p</strong> (7−6=1)</li>
+          <li>5 stick → <strong>+2 p</strong> (7−5=2)</li>
+          <li>4 stick → <strong>+3 p</strong> &nbsp;osv.</li>
+          <li>6–7 (det ena laget tar 6): laget med 6 stick vinner och får +1 p.</li>
+        </ul>
+        <p>Den spelare som vann sticket lägger ut inför nästa stick.</p>
+
+        <h3>Poäng vid Spel</h3>
+        <p>Det lag som valde Spel (visade rött kort) utmanas och vill ta <strong>flest stick</strong>. Inga minuspoäng.</p>
+        <ul>
+          <li><strong>Spelarlaget vinner (fler stick):</strong> normala poäng = stick − 6. Motståndarna 0 p.</li>
+          <li><strong>Motståndarlaget vinner istället:</strong> dubbla poäng = (stick − 6) × 2. Spelarlaget 0 p.</li>
+        </ul>
+
+        <h3>Vinnare</h3>
+        <p>Första laget att nå <strong>13 poäng</strong> vinner matchen.</p>
+
+        <h3>Exempel</h3>
+        <p><strong>Kryp:</strong> Lag 1 tar 5 stick, Lag 2 tar 8 stick. Lag 1 vinner omgången och får +2 p (7−5=2). Lag 2 → 0 p.</p>
+        <p><strong>Spel, Lag 1 valde &amp; vinner:</strong> Lag 1 tar 8 stick → +2 p. Lag 2 → 0 p.</p>
+        <p><strong>Spel, Lag 1 valde men förlorade:</strong> Lag 2 tar 8 stick → +4 p ⚡ (dubbelt). Lag 1 → 0 p.</p>
+
+      </div>
+    </details>
+
+  </div>
+</div><!-- /screen-setup -->
+
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 2 – SPEL
+═══════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+
+  <div class="game-topbar">
+    <button class="icon-btn" id="back-btn" title="Ändra namn">←</button>
+    <span class="topbar-title" id="game-topbar-title">Fyrmannawhist</span>
+    <button class="icon-btn red" id="reset-btn" title="Nollställ spelet">↺</button>
+  </div>
+
+  <div class="page-wrap gap-md">
+
+    <!-- Poäng -->
+    <section class="score-panel">
+      <div class="score-side t1">
+        <div class="score-team-lbl" id="t1-lbl">Lag 1</div>
+        <div class="score-num" id="score1">0</div>
+      </div>
+      <div class="score-sep">–</div>
+      <div class="score-side t2">
+        <div class="score-team-lbl" id="t2-lbl">Lag 2</div>
+        <div class="score-num" id="score2">0</div>
+      </div>
+    </section>
+
+    <!-- Vinnarbanner (dold tills ett lag når 13p) -->
+    <div id="win-banner" class="win-banner hidden">
+      <div class="win-trophy">🏆</div>
+      <div class="win-text">
+        <div class="win-title" id="win-title">Lag 1 vinner!</div>
+        <div class="win-sub">Matchen avgjord — 13 poäng nådda</div>
+      </div>
+      <button class="btn-save-game" id="save-game-btn" onclick="saveGameToLB()">Spara match →</button>
+    </div>
+
+    <!-- Progressbars mot 13p -->
+    <div class="score-progress">
+      <span class="prog-lbl" id="prog-lbl1">0/13</span>
+      <div class="prog-bar-wrap">
+        <div class="prog-bar t1" id="prog1" style="width:0%"></div>
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-bar t2" id="prog2" style="width:0%"></div>
+      </div>
+      <span class="prog-lbl" id="prog-lbl2">0/13</span>
+    </div>
+
+    <!-- Blandare -->
+    <section class="gap-sm">
+      <div class="dealer-pill">
+        <span class="dealer-icon">🃏</span>
+        <div class="dealer-info">
+          <span class="dealer-lbl-sm">Blandar nu</span>
+          <span class="dealer-nm" id="dealer-name">—</span>
+        </div>
+        <span class="dealer-tag" id="dealer-tag"></span>
+      </div>
+      <!-- Turordning för kryp/spel-valet -->
+      <div class="turn-order" id="turn-order-box">
+        <div class="turn-order-title">Turordning — visa ett kort var (rött=Spel, svart=Pass)</div>
+        <div class="turn-players" id="turn-players"></div>
+      </div>
+    </section>
+
+    <!-- Registrera omgång -->
+    <section class="card">
+      <p class="section-label">Registrera omgång</p>
+      <div class="form-row">
+
+        <!-- Kryp / Spel -->
+        <div>
+          <div class="field-label">Typ av omgång</div>
+          <div class="btn-seg-wrap">
+            <button class="btn-seg" id="btn-kryp" onclick="setRoundType('kryp')">♣♠ Kryp</button>
+            <button class="btn-seg" id="btn-spel" onclick="setRoundType('spel')">♥♦ Spel</button>
+          </div>
+        </div>
+
+        <!-- Vilket lag valde Spel? -->
+        <div class="spel-row" id="spel-lag-row">
+          <div class="field-label">Vilket lag valde Spel?</div>
+          <div class="spel-lag-wrap">
+            <button class="spel-lag-btn" id="spel-lag-1" onclick="setSpelLag(1)">Lag 1</button>
+            <button class="spel-lag-btn" id="spel-lag-2" onclick="setSpelLag(2)">Lag 2</button>
+          </div>
+        </div>
+
+        <!-- Antal stick -->
+        <div>
+          <div class="field-label">Antal stick (totalt 13)</div>
+          <div class="form-row-h">
+            <div class="add-field">
+              <label class="field-label" id="add-lbl1">Lag 1</label>
+              <input type="number" id="inp1" placeholder="0–13" min="0" max="13" oninput="updatePreview()" />
+            </div>
+            <span class="add-vs">+</span>
+            <div class="add-field">
+              <label class="field-label" id="add-lbl2">Lag 2</label>
+              <input type="number" id="inp2" placeholder="0–13" min="0" max="13" oninput="updatePreview()" />
+            </div>
+            <span class="add-vs">= 13</span>
+          </div>
+        </div>
+
+        <!-- Förhandsvisning -->
+        <div class="score-preview" id="score-preview">Välj typ och ange stick ovan</div>
+
+        <button class="btn-primary" id="add-btn">Spara omgång</button>
+      </div>
+    </section>
+
+    <!-- Historik -->
+    <section class="card">
+      <p class="section-label">Historik – detta spel</p>
+      <div class="history-list" id="hist-list">
+        <p class="empty-note">Inga omgångar ännu.</p>
+      </div>
+    </section>
+
+  </div>
+</div><!-- /screen-game -->
+
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 3 – LEADERBOARD
+═══════════════════════════════════════════════ -->
+<div id="screen-lb" class="screen">
+
+  <div class="lb-topbar">
+    <span class="lb-topbar-title">🏆 Leaderboard</span>
+    <button class="icon-btn red" id="lb-clear-btn" title="Rensa leaderboard">✕</button>
+  </div>
+
+  <div class="page-wrap gap-md">
+    <div id="lb-list" class="gap-md"></div>
+  </div>
+
+</div><!-- /screen-lb -->
+
+
+<!-- TAB BAR -->
+<nav class="tab-bar" id="tab-bar">
+  <button class="tab-btn" id="tab-game" onclick="switchTab('game')">
+    <span class="tab-icon">♠</span>Spel
+  </button>
+  <button class="tab-btn" id="tab-lb" onclick="switchTab('lb')">
+    <span class="tab-icon">🏆</span>Leaderboard
+  </button>
+</nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     BISMARCK
+══════════════════════════════════════ -->
+<div id="bsk-root">
+  <div id="bsk-app"></div>
+  <div id="bsk-modal"></div>
+  <nav class="nav">
+    <div class="nb" id="bsk-nb-game"    onclick="BSK.navTo('game')">   <span class="ni">🃏</span>SPEL</div>
+    <div class="nb" id="bsk-nb-history" onclick="BSK.navTo('history')"><span class="ni">📋</span>HISTORIK</div>
+    <div class="nb" id="bsk-nb-stats"   onclick="BSK.navTo('stats')">  <span class="ni">📊</span>STATISTIK</div>
+  </nav>
+</div>
+
+<script>
+/* ══════════════════════════════════
+   LAUNCHER LOGIC
+══════════════════════════════════ */
+let activeApp = null; // 'whist' | 'bsk' | null
+
+function showLauncher() {
+  document.getElementById("screen-launcher").classList.add("active");
+  document.getElementById("whist-root").classList.remove("active");
+  document.getElementById("bsk-root").classList.remove("active");
+
+  // Update badges for in-progress games
+  const wGame = (() => { try { const r = localStorage.getItem("whist_game_v5"); return r ? JSON.parse(r) : null; } catch {return null;} })();
+  const bGame = (() => { try { const r = localStorage.getItem("bsk8_game"); return r ? JSON.parse(r) : null; } catch {return null;} })();
+
+  const gcWhist = document.getElementById("gc-whist");
+  const gcBsk   = document.getElementById("gc-bsk");
+
+  // Remove old badges
+  gcWhist.querySelectorAll(".gc-badge").forEach(e => e.remove());
+  gcBsk.querySelectorAll(".gc-badge").forEach(e => e.remove());
+
+  if (wGame && wGame.started && !wGame.saved) {
+    const b = document.createElement("span");
+    b.className = "gc-badge";
+    b.textContent = "Pågående";
+    gcWhist.insertBefore(b, gcWhist.querySelector(".gc-arrow"));
+  }
+  if (bGame) {
+    const b = document.createElement("span");
+    b.className = "gc-badge";
+    b.textContent = "Pågående";
+    gcBsk.insertBefore(b, gcBsk.querySelector(".gc-arrow"));
+  }
+  activeApp = null;
+  window.scrollTo(0, 0);
+}
+
+let whistInited = false;
+function launchWhist() {
+  document.getElementById("screen-launcher").classList.remove("active");
+  document.getElementById("bsk-root").classList.remove("active");
+  document.getElementById("whist-root").classList.add("active");
+  activeApp = "whist";
+  if (!whistInited) { whistInited = true; W.init(); }
+  else { /* already running */ }
+  window.scrollTo(0, 0);
+}
+
+let bskInited = false;
+function launchBSK() {
+  document.getElementById("screen-launcher").classList.remove("active");
+  document.getElementById("whist-root").classList.remove("active");
+  document.getElementById("bsk-root").classList.add("active");
+  activeApp = "bsk";
+  if (!bskInited) { bskInited = true; BSK.init(); }
+  else { BSK.navTo(BSK._screen || "game"); }
+  window.scrollTo(0, 0);
+}
+
+/* ══════════════════════════════════
+   WHIST — wrapped module
+══════════════════════════════════ */
+const W = (function() {
+/* ════════════════════════════════════════
+   STORAGE KEYS
+════════════════════════════════════════ */
+const LS_GAME = "whist_game_v5";
+const LS_LB   = "whist_lb_v5";
+const WIN_SCORE = 13;
+
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+const DEFAULTS = ["Spelare 1","Spelare 2","Spelare 3","Spelare 4"];
+
+function defaultGame() {
+  return {
+    names:     [...DEFAULTS],
+    scores:    [0, 0],
+    history:   [], // { round, type, spelLag, s1, s2, p1, p2, upset }
+    dealerIdx: 0,
+    round:     1,
+    started:   false,
+    saved:     false,   // true once this match has been saved to LB
+    gameId:    Date.now()
+  };
+}
+
+let game = (()=>{
+  try {
+    const r = localStorage.getItem(LS_GAME);
+    return r ? { ...defaultGame(), ...JSON.parse(r) } : defaultGame();
+  } catch(_) { return defaultGame(); }
+})();
+
+/*
+  Leaderboard structure:
+  { playerName: { wins: number, matches: [{date, won, gameId}] } }
+*/
+let lb = (()=>{
+  try {
+    const r = localStorage.getItem(LS_LB);
+    return r ? JSON.parse(r) : {};
+  } catch(_) { return {}; }
+})();
+
+function saveGame() { localStorage.setItem(LS_GAME, JSON.stringify(game)); }
+function saveLB()   { localStorage.setItem(LS_LB,   JSON.stringify(lb));   }
+
+/* ════════════════════════════════════════
+   ROUND FORM STATE
+════════════════════════════════════════ */
+let roundType = null;  // 'kryp' | 'spel'
+let spelLag   = null;  // 1 | 2
+
+/* ════════════════════════════════════════
+   DOM REFS
+════════════════════════════════════════ */
+const screens  = {
+  setup: document.getElementById("screen-setup"),
+  game:  document.getElementById("screen-game"),
+  lb:    document.getElementById("screen-lb")
+};
+const tabBar  = document.getElementById("tab-bar");
+const tabGame = document.getElementById("tab-game");
+const tabLb   = document.getElementById("tab-lb");
+
+const pInps    = [1,2,3,4].map(n => document.getElementById("p"+n));
+const startBtn = document.getElementById("start-btn");
+
+const t1Lbl         = document.getElementById("t1-lbl");
+const t2Lbl         = document.getElementById("t2-lbl");
+const score1El      = document.getElementById("score1");
+const score2El      = document.getElementById("score2");
+const prog1El       = document.getElementById("prog1");
+const prog2El       = document.getElementById("prog2");
+const progLbl1      = document.getElementById("prog-lbl1");
+const progLbl2      = document.getElementById("prog-lbl2");
+const winBanner     = document.getElementById("win-banner");
+const winTitle      = document.getElementById("win-title");
+const dealerNmEl    = document.getElementById("dealer-name");
+const dealerTagEl   = document.getElementById("dealer-tag");
+const turnPlayersEl = document.getElementById("turn-players");
+
+const addLbl1    = document.getElementById("add-lbl1");
+const addLbl2    = document.getElementById("add-lbl2");
+const inp1       = document.getElementById("inp1");
+const inp2       = document.getElementById("inp2");
+const addBtn     = document.getElementById("add-btn");
+const histList   = document.getElementById("hist-list");
+const backBtn    = document.getElementById("back-btn");
+const resetBtn   = document.getElementById("reset-btn");
+const previewEl  = document.getElementById("score-preview");
+const spelLagRow = document.getElementById("spel-lag-row");
+const spelLag1Btn= document.getElementById("spel-lag-1");
+const spelLag2Btn= document.getElementById("spel-lag-2");
+const lbList     = document.getElementById("lb-list");
+const lbClearBtn = document.getElementById("lb-clear-btn");
+
+/* ════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════ */
+function showSetup() {
+  Object.values(screens).forEach(s => s.classList.remove("active"));
+  tabBar.classList.remove("visible");
+  screens.setup.classList.add("active");
+  prefillSetup();
+}
+
+function switchTab(tab) {
+  Object.values(screens).forEach(s => s.classList.remove("active"));
+  tabGame.classList.toggle("active", tab === "game");
+  tabLb.classList.toggle("active",   tab === "lb");
+  if (tab === "game") { screens.game.classList.add("active"); renderGame(); }
+  else                { screens.lb.classList.add("active");   renderLB(); }
+  window.scrollTo(0, 0);
+}
+
+function enterGame() {
+  tabBar.classList.add("visible");
+  switchTab("game");
+}
+
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
+function lagTag(idx)   { return (idx===0||idx===2) ? "Lag 1" : "Lag 2"; }
+function lagClass(idx) { return (idx===0||idx===2) ? "t1" : "t2"; }
+
+function teamLabel(lag) {
+  return lag===1
+    ? `${game.names[0]} & ${game.names[2]}`
+    : `${game.names[1]} & ${game.names[3]}`;
+}
+
+function shortFirst(lag) {
+  const [a,b] = lag===1 ? [game.names[0],game.names[2]] : [game.names[1],game.names[3]];
+  return a.split(" ")[0] + " & " + b.split(" ")[0];
+}
+
+function hasWinner() {
+  return game.scores[0] >= WIN_SCORE || game.scores[1] >= WIN_SCORE;
+}
+
+/* ════════════════════════════════════════
+   POÄNGREGLER
+   ──────────────────────────────────────
+   KRYP — vill ta FÅ stick.
+     Laget med färst stick vinner. Poäng = 7 − eget stick-antal.
+     (Ex: 6 stick → 7−6 = +1p, 5 stick → +2p, 4 stick → +3p)
+     Motståndarna 0p. Vid lika stick (6–7 → laget med 6 vinner).
+     Oavgjort (6½–6½ ej möjligt, alltid 13 stick): laget med
+     färre stick tar poängen.
+
+   SPEL — vill ta FLEST stick (≥7). Spelarlaget utmanas.
+     Spelarlaget vinner (fler stick): stick−6 p. Motst. 0p.
+     Motståndarlaget vinner: (stick−6)×2 p dubbelt. Spelarlaget 0p.
+════════════════════════════════════════ */
+function calcPoints(type, s1, s2, sLag) {
+  if (type === "kryp") {
+    // Laget med FÄRST stick vinner. Poäng = 7 − eget stick.
+    if (s1 < s2) return { p1: 7-s1, p2: 0, upset: false };
+    if (s2 < s1) return { p1: 0, p2: 7-s2, upset: false };
+    // Exakt lika — ska ej hända med 13 stick, men fallback: 0-0
+    return { p1: 0, p2: 0, upset: false };
+  }
+  // SPEL — laget som valde spel vill ta FLEST (≥7)
+  if (sLag === 1) {
+    if (s1 > s2) return { p1: s1-6, p2: 0,        upset: false }; // Lag1 (spelarlaget) vinner
+    if (s2 > s1) return { p1: 0,    p2: (s2-6)*2,  upset: true  }; // Lag2 (motståndare) vinner — dubbelt
+    return { p1: 0, p2: 0, upset: false };
+  } else {
+    if (s2 > s1) return { p1: 0,        p2: s2-6,    upset: false }; // Lag2 (spelarlaget) vinner
+    if (s1 > s2) return { p1: (s1-6)*2, p2: 0,       upset: true  }; // Lag1 (motståndare) vinner — dubbelt
+    return { p1: 0, p2: 0, upset: false };
+  }
+}
+
+/* ════════════════════════════════════════
+   SETUP
+════════════════════════════════════════ */
+function prefillSetup() {
+  pInps.forEach((el,i) => {
+    el.value = game.names[i] !== DEFAULTS[i] ? game.names[i] : "";
+  });
+}
+
+startBtn.addEventListener("click", () => {
+  game.names   = pInps.map((el,i) => el.value.trim() || DEFAULTS[i]);
+  game.started = true;
+  saveGame();
+  enterGame();
+});
+
+pInps.forEach((el, i) => {
+  el.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      if (i < pInps.length-1) pInps[i+1].focus();
+      else startBtn.click();
+    }
+  });
+});
+
+/* ════════════════════════════════════════
+   ROUND TYPE / SPEL-LAG
+════════════════════════════════════════ */
+function setRoundType(t) {
+  roundType = t;
+  document.getElementById("btn-kryp").className =
+    "btn-seg" + (t==="kryp" ? " sel-kryp" : "");
+  document.getElementById("btn-spel").className =
+    "btn-seg" + (t==="spel" ? " sel-spel" : "");
+  spelLagRow.className = "spel-row" + (t==="spel" ? " visible" : "");
+  if (t === "kryp") { spelLag = null; refreshSpelLagBtns(); }
+  updatePreview();
+}
+
+function setSpelLag(lag) {
+  spelLag = lag;
+  refreshSpelLagBtns();
+  updatePreview();
+}
+
+function refreshSpelLagBtns() {
+  spelLag1Btn.className = "spel-lag-btn" + (spelLag===1 ? " active-t1" : "");
+  spelLag2Btn.className = "spel-lag-btn" + (spelLag===2 ? " active-t2" : "");
+  spelLag1Btn.textContent = shortFirst(1);
+  spelLag2Btn.textContent = shortFirst(2);
+}
+
+/* Live preview */
+function updatePreview() {
+  if (!roundType) { previewEl.innerHTML = "Välj typ av omgång"; return; }
+  const s1 = parseInt(inp1.value), s2 = parseInt(inp2.value);
+  if (isNaN(s1)||isNaN(s2)) { previewEl.innerHTML = "Ange antal stick ovan"; return; }
+  if (s1+s2 !== 13) {
+    previewEl.innerHTML = `<span style="color:var(--red)">Stick summerar till ${s1+s2} — måste vara 13</span>`;
+    return;
+  }
+  if (roundType==="spel" && !spelLag) {
+    previewEl.innerHTML = "Välj vilket lag som valde Spel";
+    return;
+  }
+  const { p1, p2, upset } = calcPoints(roundType, s1, s2, spelLag);
+  const n1 = shortFirst(1), n2 = shortFirst(2);
+  let html = `<span>${n1}: <strong>+${p1} p</strong> &nbsp; ${n2}: <strong>+${p2} p</strong></span>`;
+  if (upset) html += ` <span class="bonus">⚡ Dubbelt!</span>`;
+  previewEl.innerHTML = html;
+}
+
+/* ════════════════════════════════════════
+   RENDER GAME
+════════════════════════════════════════ */
+function renderGame() {
+  t1Lbl.textContent = teamLabel(1);
+  t2Lbl.textContent = teamLabel(2);
+  addLbl1.textContent = shortFirst(1);
+  addLbl2.textContent = shortFirst(2);
+  refreshSpelLagBtns();
+
+  score1El.textContent = game.scores[0];
+  score2El.textContent = game.scores[1];
+
+  // Progress bars
+  const pct1 = Math.min(100, (game.scores[0] / WIN_SCORE) * 100);
+  const pct2 = Math.min(100, (game.scores[1] / WIN_SCORE) * 100);
+  prog1El.style.width = pct1 + "%";
+  prog2El.style.width = pct2 + "%";
+  progLbl1.textContent = game.scores[0] + "/" + WIN_SCORE;
+  progLbl2.textContent = game.scores[1] + "/" + WIN_SCORE;
+
+  // Win banner
+  const won = hasWinner();
+  winBanner.classList.toggle("hidden", !won);
+  if (won) {
+    const winLag = game.scores[0] >= WIN_SCORE ? teamLabel(1) : teamLabel(2);
+    winTitle.textContent = winLag + " vinner matchen! 🎉";
+    // Hide add-round form when game is over (unless already saved)
+    document.querySelector(".card").style.opacity = game.saved ? "0.4" : (won ? "0.4" : "1");
+    addBtn.disabled = won;
+  } else {
+    addBtn.disabled = false;
+    document.querySelector(".card").style.opacity = "1";
+  }
+
+  const di = game.dealerIdx;
+  dealerNmEl.textContent  = game.names[di];
+  dealerTagEl.textContent = lagTag(di);
+  dealerTagEl.className   = "dealer-tag " + lagClass(di);
+
+  renderTurnOrder(di);
+  renderHistory();
+  updatePreview();
+}
+
+/* ════════════════════════════════════════
+   TURN ORDER CARDS
+════════════════════════════════════════ */
+const CARD_SUITS  = ["♥","♦","♣","♠"];
+const CARD_IS_RED = [true, true, false, false];
+
+function renderTurnOrder(dealerIdx) {
+  const order = [1,2,3,0].map(offset => (dealerIdx + offset) % 4);
+  turnPlayersEl.innerHTML = order.map((playerIdx, pos) => {
+    const name    = game.names[playerIdx];
+    const suit    = CARD_SUITS[playerIdx % 4];
+    const isRed   = CARD_IS_RED[playerIdx % 4];
+    const isDealer= pos === 3;
+    return `
+      <div class="turn-player">
+        <div class="turn-card">
+          <span class="${isRed ? 'card-suit-r' : 'card-suit-b'}">${suit}</span>
+          ${isDealer ? '<span class="badge-b">B</span>' : ''}
+        </div>
+        <span class="turn-name">${escHtml(name)}</span>
+      </div>
+      ${pos < 3 ? '<span class="turn-arrow">›</span>' : ''}
+    `;
+  }).join("");
+}
+
+/* ════════════════════════════════════════
+   HISTORY
+════════════════════════════════════════ */
+function renderHistory() {
+  if (!game.history.length) {
+    histList.innerHTML = '<p class="empty-note">Inga omgångar ännu.</p>';
+    return;
+  }
+  histList.innerHTML = [...game.history].reverse().map(h => {
+    let typeLbl = h.type === "kryp" ? "Kryp" : (h.upset ? "Spel ⚡" : "Spel");
+    let typeCls = h.type === "kryp" ? "kryp" : (h.upset ? "spel upset" : "spel");
+    const chip1 = h.p1 > 0
+      ? `<span class="chip t1">+${h.p1}</span>`
+      : `<span class="chip zero">0</span>`;
+    const chip2 = h.p2 > 0
+      ? `<span class="chip t2">+${h.p2}</span>`
+      : `<span class="chip zero">0</span>`;
+    return `<div class="hist-row">
+      <span class="hist-rnd">Omg. ${h.round}</span>
+      <span class="hist-type ${typeCls}">${typeLbl}</span>
+      <div class="hist-chips">${chip1}${chip2}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ════════════════════════════════════════
+   ADD ROUND
+════════════════════════════════════════ */
+addBtn.addEventListener("click", doAddRound);
+inp1.addEventListener("keydown", e => { if(e.key==="Enter") inp2.focus(); });
+inp2.addEventListener("keydown", e => { if(e.key==="Enter") doAddRound(); });
+
+function doAddRound() {
+  if (hasWinner()) { alert("Matchen är avgjord! Spara matchen eller nollställ för att spela igen."); return; }
+  if (!roundType) { alert("Välj Kryp eller Spel för omgången."); return; }
+  if (roundType === "spel" && !spelLag) { alert("Välj vilket lag som valde Spel."); return; }
+
+  const s1 = parseInt(inp1.value), s2 = parseInt(inp2.value);
+  if (isNaN(s1) || isNaN(s2)) { shakeEl(isNaN(s1) ? inp1 : inp2); return; }
+  if (s1 < 0||s2 < 0||s1 > 13||s2 > 13) { alert("Stick måste vara 0–13."); return; }
+  if (s1 + s2 !== 13) { alert(`Stick måste summera till 13. Nu: ${s1+s2}.`); return; }
+
+  const { p1, p2, upset } = calcPoints(roundType, s1, s2, spelLag);
+  const savedType = roundType;
+
+  game.scores[0] += p1;
+  game.scores[1] += p2;
+  game.history.push({ round: game.round, type: savedType, spelLag, s1, s2, p1, p2, upset });
+  game.round++;
+  game.dealerIdx = (game.dealerIdx + 1) % 4;
+
+  inp1.value = ""; inp2.value = "";
+  roundType = null; spelLag = null;
+  document.getElementById("btn-kryp").className = "btn-seg";
+  document.getElementById("btn-spel").className = "btn-seg";
+  spelLagRow.className = "spel-row";
+
+  saveGame();
+  renderGame();
+
+  [score1El, score2El].forEach(el => {
+    el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+    el.addEventListener("transitionend", ()=>el.classList.remove("bump"), {once:true});
+  });
+
+  // Scroll to top to show score/banner
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ════════════════════════════════════════
+   SAVE MATCH TO LEADERBOARD
+════════════════════════════════════════ */
+function saveGameToLB() {
+  if (!hasWinner()) return;
+  if (game.saved) { alert("Den här matchen är redan sparad i leaderboarden."); return; }
+
+  const winnerLag = game.scores[0] >= WIN_SCORE ? 1 : 2;
+  const date = Date.now();
+  const gid  = game.gameId;
+
+  // Determine winning and losing player indices
+  const winIdxs  = winnerLag === 1 ? [0,2] : [1,3];
+  const loseIdxs = winnerLag === 1 ? [1,3] : [0,2];
+
+  [...winIdxs, ...loseIdxs].forEach((idx, i) => {
+    const name = game.names[idx];
+    const won  = i < 2; // first two are winners
+    if (!lb[name]) lb[name] = { wins: 0, losses: 0, matches: [] };
+    if (won) lb[name].wins++;
+    else lb[name].losses = (lb[name].losses||0) + 1;
+    lb[name].matches.push({ date, won, gid });
+  });
+
+  saveLB();
+  game.saved = true;
+  saveGame();
+
+  // Start fresh game with same players
+  const names = [...game.names];
+  game = defaultGame();
+  game.names   = names;
+  game.started = true;
+  saveGame();
+
+  roundType = null; spelLag = null;
+
+  // Brief success flash, then re-render
+  winTitle.textContent = "✓ Match sparad!";
+  setTimeout(() => {
+    renderGame();
+  }, 900);
+}
+
+/* ════════════════════════════════════════
+   BACK / RESET
+════════════════════════════════════════ */
+backBtn.addEventListener("click", showSetup);
+
+resetBtn.addEventListener("click", () => {
+  if (!confirm("Nollställ pågående spel?\nPoäng och omgångshistorik raderas.\nLeaderboarden påverkas inte.")) return;
+  const names = [...game.names];
+  game = defaultGame();
+  game.names   = names;
+  game.started = true;
+  roundType = null; spelLag = null;
+  document.getElementById("btn-kryp").className = "btn-seg";
+  document.getElementById("btn-spel").className = "btn-seg";
+  spelLagRow.className = "spel-row";
+  saveGame();
+  renderGame();
+});
+
+/* ════════════════════════════════════════
+   LEADERBOARD  — match wins per player
+════════════════════════════════════════ */
+const COLORS = ["#007AFF","#FF3B30","#34C759","#FF9500","#AF52DE","#5856D6","#FF2D55","#32ADE6"];
+function avatarColor(name) {
+  let h = 0;
+  for (let c of name) h = (h*31 + c.charCodeAt(0)) & 0xffff;
+  return COLORS[h % COLORS.length];
+}
+function initials(name) {
+  return name.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase() || "?";
+}
+function fmtDate(ts) {
+  return new Date(ts).toLocaleDateString("sv-SE",{day:"numeric",month:"short",year:"numeric"});
+}
+
+function renderLB() {
+  const players = Object.entries(lb)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a,b) => (b.wins||0) - (a.wins||0) || (a.losses||0) - (b.losses||0));
+
+  if (!players.length) {
+    lbList.innerHTML = '<p class="lb-empty">Inga matcher sparade ännu.<br>Spela till 13 poäng och tryck "Spara match" för att se statistik!</p>';
+    return;
+  }
+
+  lbList.innerHTML = players.map((p, i) => {
+    const rank    = i + 1;
+    const rankCls = rank===1?"gold":rank===2?"silver":rank===3?"bronze":"";
+    const rankIcon= rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":rank;
+    const wins    = p.wins   || 0;
+    const losses  = p.losses || 0;
+    const total   = wins + losses;
+    const winPct  = total ? Math.round((wins/total)*100) : 0;
+    const color   = avatarColor(p.name);
+    const ini     = initials(p.name);
+
+    // Match history rows (last 5)
+    const recent = [...(p.matches||[])].slice(-5).reverse();
+    const recentHTML = recent.map(m => {
+      const res = m.won ? "Vann" : "Förlorade";
+      const cls = m.won ? "pos" : "neg-lb";
+      return `<div class="lb-game-row">
+        <span class="lb-game-date">${fmtDate(m.date)}</span>
+        <span class="lb-game-pts ${cls}">${res}</span>
+      </div>`;
+    }).join("");
+
+    const moreCount = (p.matches||[]).length - recent.length;
+
+    return `<div class="card gap-sm">
+      <div class="lb-player-card">
+        <span class="lb-rank ${rankCls}">${rankIcon}</span>
+        <div class="lb-avatar" style="background:${color}">${ini}</div>
+        <div class="lb-info">
+          <div class="lb-name">${escHtml(p.name)}</div>
+          <div class="lb-meta">${total} matcher · ${winPct}% vunna</div>
+        </div>
+        <div class="lb-wins">
+          <span class="lb-wins-num">${wins}</span>
+          <span class="lb-wins-lbl">vinster</span>
+        </div>
+      </div>
+      ${total>0 ? `
+        <div class="lb-win-bar-wrap">
+          <div class="lb-win-bar" style="width:${winPct}%"></div>
+        </div>
+        <div class="lb-game-history">${recentHTML}</div>
+        ${moreCount>0 ? `<button class="lb-expand-btn" onclick="expandLB('${escHtml(p.name)}',this)">Visa alla ${total} matcher ▾</button>` : ""}
+      ` : ""}
+    </div>`;
+  }).join("");
+}
+
+function expandLB(name, btn) {
+  const data = lb[name]; if (!data) return;
+  const all  = [...(data.matches||[])].reverse();
+  const html = all.map(m => {
+    const res = m.won ? "Vann" : "Förlorade";
+    const cls = m.won ? "pos" : "neg-lb";
+    return `<div class="lb-game-row">
+      <span class="lb-game-date">${fmtDate(m.date)}</span>
+      <span class="lb-game-pts ${cls}">${res}</span>
+    </div>`;
+  }).join("");
+  btn.previousElementSibling.innerHTML = html;
+  btn.remove();
+}
+
+lbClearBtn.addEventListener("click", () => {
+  if (!confirm("Rensa hela leaderboarden? All matchhistorik raderas permanent.")) return;
+  lb = {}; saveLB(); renderLB();
+});
+
+/* ════════════════════════════════════════
+   UTILS
+════════════════════════════════════════ */
+function shakeEl(el) {
+  el.style.animation = "none";
+  el.getBoundingClientRect();
+  el.style.animation = "shake .35s ease";
+  el.focus();
+}
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ════════════════════════════════════════
+   BOOT
+════════════════════════════════════════ */
+// boot deferred — called by launcher
+
+  function initWhist() {
+    if (game.started) enterGame();
+    else showSetup();
+  }
+
+  // Patch back-btn to go to launcher instead of setup
+  // (handled via showSetup already going to screen-setup,
+  //  but we add a "← Spel" button via override)
+  const _origShowSetup = showSetup;
+  function showSetupPatched() {
+    _origShowSetup();
+  }
+
+  return { init: initWhist };
+})();
+
+/* ══════════════════════════════════
+   BISMARCK — module
+══════════════════════════════════ */
+
+const BSK = (function() {
+const GT=["Spel","Pass","Spader","Valfri"],TT=13;
+const PCOLS=["var(--c0)","var(--c1)","var(--c2)"];
+const load=(k,d)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d}catch{return d}};
+const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const fmt=n=>(n>0?"+":"")+n;
+const scls=n=>n>0?"pos":n<0?"neg":"";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tscore=(t,type)=>type==="Pass"?-Math.abs(t):t;
+const ptotal=(p,g)=>(g?.rounds||[]).reduce((s,r)=>{const t=parseInt(r.tricks[p]);return s+(isNaN(t)?0:tscore(t,r.type))},0);
+const tricksOk=v=>v!==null&&v!==""&&v!==undefined&&!isNaN(parseInt(v));
+const roundDone=(r,ps)=>!!r.type&&ps.every(p=>tricksOk(r.tricks[p]));
+const countDone=g=>(g?.rounds||[]).filter(r=>roundDone(r,g.players)).length;
+const gameDone=g=>countDone(g)===12;
+const DEMO=[
+  {id:1744473600000,date:"2026-04-12",players:["Simon","Anton","Martin"],winner:"Anton",finalScores:{Simon:23,Anton:41,Martin:14},rounds:[{id:1,forhand:"Simon",type:"Spel",tricks:{Simon:5,Anton:5,Martin:3}},{id:2,forhand:"Anton",type:"Spader",tricks:{Simon:3,Anton:7,Martin:3}},{id:3,forhand:"Martin",type:"Pass",tricks:{Simon:3,Anton:2,Martin:8}},{id:4,forhand:"Simon",type:"Pass",tricks:{Simon:6,Anton:2,Martin:5}},{id:5,forhand:"Anton",type:"Spel",tricks:{Simon:4,Anton:6,Martin:3}},{id:6,forhand:"Martin",type:"Spader",tricks:{Simon:3,Anton:5,Martin:5}},{id:7,forhand:"Simon",type:"Valfri",tricks:{Simon:6,Anton:4,Martin:3}},{id:8,forhand:"Anton",type:"Pass",tricks:{Simon:4,Anton:3,Martin:6}},{id:9,forhand:"Martin",type:"Valfri",tricks:{Simon:4,Anton:5,Martin:4}},{id:10,forhand:"Simon",type:"Spader",tricks:{Simon:5,Anton:4,Martin:4}},{id:11,forhand:"Anton",type:"Valfri",tricks:{Simon:3,Anton:7,Martin:3}},{id:12,forhand:"Martin",type:"Spel",tricks:{Simon:3,Anton:5,Martin:5}}]},
+  {id:1745078400000,date:"2026-04-19",players:["Simon","Anton","Martin"],winner:"Anton",finalScores:{Simon:22,Anton:38,Martin:18},rounds:[{id:1,forhand:"Simon",type:"Pass",tricks:{Simon:5,Anton:3,Martin:5}},{id:2,forhand:"Anton",type:"Spel",tricks:{Simon:4,Anton:6,Martin:3}},{id:3,forhand:"Martin",type:"Spader",tricks:{Simon:3,Anton:4,Martin:6}},{id:4,forhand:"Simon",type:"Spel",tricks:{Simon:5,Anton:5,Martin:3}},{id:5,forhand:"Anton",type:"Pass",tricks:{Simon:5,Anton:3,Martin:5}},{id:6,forhand:"Martin",type:"Valfri",tricks:{Simon:4,Anton:4,Martin:5}},{id:7,forhand:"Simon",type:"Spader",tricks:{Simon:6,Anton:4,Martin:3}},{id:8,forhand:"Anton",type:"Valfri",tricks:{Simon:3,Anton:8,Martin:2}},{id:9,forhand:"Martin",type:"Pass",tricks:{Simon:4,Anton:2,Martin:7}},{id:10,forhand:"Simon",type:"Valfri",tricks:{Simon:5,Anton:4,Martin:4}},{id:11,forhand:"Anton",type:"Spader",tricks:{Simon:3,Anton:7,Martin:3}},{id:12,forhand:"Martin",type:"Spel",tricks:{Simon:3,Anton:4,Martin:6}}]},
+  {id:1745683200000,date:"2026-04-26",players:["Simon","Anton","Martin"],winner:"Anton",finalScores:{Simon:25,Anton:40,Martin:13},rounds:[{id:1,forhand:"Simon",type:"Valfri",tricks:{Simon:6,Anton:4,Martin:3}},{id:2,forhand:"Anton",type:"Spel",tricks:{Simon:3,Anton:8,Martin:2}},{id:3,forhand:"Martin",type:"Pass",tricks:{Simon:3,Anton:2,Martin:8}},{id:4,forhand:"Simon",type:"Spel",tricks:{Simon:6,Anton:4,Martin:3}},{id:5,forhand:"Anton",type:"Spader",tricks:{Simon:3,Anton:7,Martin:3}},{id:6,forhand:"Martin",type:"Valfri",tricks:{Simon:4,Anton:4,Martin:5}},{id:7,forhand:"Simon",type:"Pass",tricks:{Simon:4,Anton:3,Martin:6}},{id:8,forhand:"Anton",type:"Valfri",tricks:{Simon:3,Anton:7,Martin:3}},{id:9,forhand:"Martin",type:"Spel",tricks:{Simon:4,Anton:4,Martin:5}},{id:10,forhand:"Simon",type:"Spader",tricks:{Simon:5,Anton:4,Martin:4}},{id:11,forhand:"Anton",type:"Pass",tricks:{Simon:5,Anton:2,Martin:6}},{id:12,forhand:"Martin",type:"Spader",tricks:{Simon:3,Anton:5,Martin:5}}]},
+  {id:1746288000000,date:"2026-05-03",players:["Simon","Anton","Martin"],winner:"Simon & Martin",finalScores:{Simon:28,Anton:22,Martin:28},rounds:[{id:1,forhand:"Simon",type:"Spel",tricks:{Simon:7,Anton:4,Martin:2}},{id:2,forhand:"Anton",type:"Spel",tricks:{Simon:3,Anton:5,Martin:5}},{id:3,forhand:"Martin",type:"Spel",tricks:{Simon:2,Anton:2,Martin:9}},{id:4,forhand:"Simon",type:"Pass",tricks:{Simon:2,Anton:7,Martin:4}},{id:5,forhand:"Anton",type:"Pass",tricks:{Simon:2,Anton:3,Martin:8}},{id:6,forhand:"Martin",type:"Pass",tricks:{Simon:3,Anton:7,Martin:3}},{id:7,forhand:"Simon",type:"Spader",tricks:{Simon:5,Anton:4,Martin:4}},{id:8,forhand:"Anton",type:"Spader",tricks:{Simon:3,Anton:6,Martin:4}},{id:9,forhand:"Martin",type:"Spader",tricks:{Simon:3,Anton:4,Martin:6}},{id:10,forhand:"Simon",type:"Valfri",tricks:{Simon:6,Anton:3,Martin:4}},{id:11,forhand:"Anton",type:"Valfri",tricks:{Simon:3,Anton:7,Martin:3}},{id:12,forhand:"Martin",type:"Valfri",tricks:{Simon:3,Anton:4,Martin:6}}]}
+];
+function mkP(name){return{name,gamesPlayed:0,wins:0,positions:{1:0,2:0,3:0},byType:Object.fromEntries(GT.map(gt=>[gt,{asForhand:{rounds:0,totalTricks:0},asOther:{rounds:0,totalTricks:0}}]))}}
+function fixP(pr){if(!pr.positions)pr.positions={1:0,2:0,3:0};GT.forEach(gt=>{if(!pr.byType[gt])pr.byType[gt]={asForhand:{rounds:0,totalTricks:0},asOther:{rounds:0,totalTricks:0}}});return pr}
+function getP(name){if(!pdb[name])pdb[name]=mkP(name);return fixP(pdb[name])}
+function getPositions(ps,fs){const sorted=[...ps].sort((a,b)=>fs[b]-fs[a]);const pos={};let p=1;for(let i=0;i<sorted.length;){let j=i;while(j<sorted.length&&fs[sorted[j]]===fs[sorted[i]])j++;for(let k=i;k<j;k++)pos[sorted[k]]=p;p=j+1;i=j;}return pos}
+function computeStats(games){const db={};(games||[]).forEach(g=>{if(!g?.players||!g?.finalScores)return;const maxS=Math.max(...g.players.map(p=>+(g.finalScores[p]||0)));const positions=getPositions(g.players,g.finalScores);g.players.forEach(p=>{if(!db[p])db[p]=mkP(p);fixP(db[p]);db[p].gamesPlayed++;if(+(g.finalScores[p]||0)===maxS)db[p].wins++;const pos=positions[p];if(pos>=1&&pos<=3)db[p].positions[pos]++;(g.rounds||[]).forEach(r=>{if(!r.type)return;const tv=parseInt(r.tricks?.[p]);if(isNaN(tv))return;const key=r.forhand===p?"asForhand":"asOther";db[p].byType[r.type][key].rounds++;db[p].byType[r.type][key].totalTricks+=tv;});});});return db}
+let hist=load("bsk8_hist",null),pdb=load("bsk8_pdb",null),bGame=load("bsk8_game",null);
+if(!hist){hist=DEMO;pdb=computeStats(DEMO);store("bsk8_hist",hist);store("bsk8_pdb",pdb)}
+if(!pdb){pdb=computeStats(hist);store("bsk8_pdb",pdb)}
+let bScreen=bGame?"game":"setup",spArr=["","",""],statTab="overview",detailRec=null;
+function newGame(ps){return{players:ps,rounds:Array.from({length:12},(_,i)=>({id:i+1,forhand:ps[i%3],type:"",tricks:Object.fromEntries(ps.map(p=>[p,""]))})),usedTypes:Object.fromEntries(ps.map(p=>[p,[]]))}}
+function buildChart(g){
+  const ps=g.players;const done=g.rounds.filter(r=>roundDone(r,ps));
+  if(done.length===0)return`<div style="text-align:center;padding:16px;font-size:13px;color:var(--t3)">Inga rundor klara ännu</div>`;
+  const cum=Object.fromEntries(ps.map(p=>[p,[0]]));
+  done.forEach(r=>ps.forEach(p=>{const last=cum[p][cum[p].length-1];const t=parseInt(r.tricks[p]);cum[p].push(last+(isNaN(t)?0:tscore(t,r.type)))}));
+  const W=340,H=150,pL=30,pR=14,pT=12,pB=22;const cW=W-pL-pR,cH=H-pT-pB;
+  const allV=Object.values(cum).flat();let minY=Math.min(0,...allV),maxY=Math.max(0,...allV);
+  if(minY===maxY){minY-=5;maxY+=5}const yR=maxY-minY;
+  const xP=i=>pL+(i/12)*cW;const yP=v=>pT+cH-((v-minY)/yR)*cH;
+  const step=yR>60?20:yR>30?10:yR>15?5:2;const t0=Math.ceil(minY/step)*step;
+  const ticks=[];for(let v=t0;v<=maxY;v+=step)ticks.push(v);
+  const gridSVG=ticks.map(v=>{const y=yP(v);const zero=v===0;return`<line x1="${pL}" y1="${y.toFixed(1)}" x2="${W-pR}" y2="${y.toFixed(1)}" stroke="currentColor" opacity="${zero?.15:.06}" stroke-width="${zero?1:.5}"/><text x="${(pL-3).toFixed(0)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="8.5" fill="currentColor" opacity=".4">${v}</text>`}).join('');
+  const xLabels=Array.from({length:13},(_,i)=>i===0?'':`<text x="${xP(i).toFixed(1)}" y="${(H-pB+13).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".4">${i}</text>`).join('');
+  const linesSVG=ps.map((p,pi)=>{const pts=cum[p];const d=pts.map((v,i)=>`${i===0?'M':'L'}${xP(i).toFixed(1)},${yP(v).toFixed(1)}`).join(' ');const last=pts[pts.length-1];const lx=xP(pts.length-1),ly=yP(last);return`<path d="${d}" fill="none" stroke="${PCOLS[pi]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((v,i)=>i===0?'':`<circle cx="${xP(i).toFixed(1)}" cy="${yP(v).toFixed(1)}" r="3" fill="${PCOLS[pi]}"/>`).join('')}<text x="${(lx+4).toFixed(1)}" y="${(ly+4).toFixed(1)}" font-size="10" fill="${PCOLS[pi]}" font-weight="bold">${last>0?"+":""}${last}</text>`}).join('');
+  const legend=ps.map((p,pi)=>`<div class="chart-legend-item"><div class="legend-dot" style="background:${PCOLS[pi]}"></div>${esc(p)}</div>`).join('');
+  return`<div class="chart-card"><div class="chart-title">Poängutveckling omgång för omgång</div><svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">${gridSVG}${xLabels}${linesSVG}</svg><div class="chart-legend">${legend}</div></div>`;
+}
+function analyze(g){try{const ps=g.players,fs=g.finalScores;const maxS=Math.max(...ps.map(p=>+fs[p]));const winners=ps.filter(p=>+fs[p]===maxS);const rounds=g.rounds.filter(r=>roundDone(r,ps));const rWins=Object.fromEntries(ps.map(p=>[p,0]));rounds.forEach(r=>{const sc=ps.map(p=>({p,s:tscore(+r.tricks[p],r.type)}));const best=Math.max(...sc.map(x=>x.s));sc.filter(x=>x.s===best).forEach(x=>rWins[x.p]++)});const ownPts=Object.fromEntries(ps.map(p=>[p,0]));rounds.forEach(r=>ps.forEach(p=>{const s=tscore(+r.tricks[p],r.type);if(r.forhand===p)ownPts[p]+=s}));const typeBest={};GT.forEach(gt=>{const gr=rounds.filter(r=>r.type===gt);if(!gr.length){typeBest[gt]=null;return}const avgs=ps.map(p=>({p,avg:gr.reduce((s,r)=>s+tscore(+r.tricks[p],gt),0)/gr.length}));const best=avgs.reduce((a,b)=>a.avg>=b.avg?a:b);typeBest[gt]={player:best.p,avg:best.avg.toFixed(1)}});const run=Object.fromEntries(ps.map(p=>[p,0]));let decisive=null,maxGain=-Infinity;rounds.forEach((r,ri)=>{ps.forEach(p=>run[p]+=tscore(+r.tricks[p],r.type));winners.forEach(w=>{const others=ps.filter(p=>p!==w);if(!others.length)return;const wS=tscore(+r.tricks[w],r.type);const oAvg=others.reduce((s,p)=>s+tscore(+r.tricks[p],r.type),0)/others.length;const gain=wS-oAvg;if(gain>maxGain){maxGain=gain;decisive={r,idx:ri+1,winner:w,gain:Math.round(gain*10)/10,wScore:wS,isPass:r.type==="Pass"}}})});return{ok:true,g,ps,fs,maxS,winners,rWins,ownPts,typeBest,decisive};}catch(e){return{ok:false,g,ps:g.players,fs:g.finalScores,maxS:Math.max(...g.players.map(p=>+g.finalScores[p])),winners:g.players.filter(p=>+g.finalScores[p]===Math.max(...g.players.map(q=>+g.finalScores[q])))}}}
+function rSummaryContent(a){
+  if(!a.ok)return`<div class="win-banner"><span class="win-crown">🏆</span><div class="win-lbl">${a.winners.length>1?"Oavgjort":"Vinnare"}</div><div class="win-name">${a.winners.map(esc).join(" &amp; ")}</div></div>`;
+  const{g,ps,fs,winners,rWins,ownPts,typeBest,decisive}=a;
+  const sorted=[...ps].sort((x,y)=>fs[y]-fs[x]);const maxRW=Math.max(...ps.map(p=>rWins[p]),1);const maxO=Math.max(...ps.map(p=>ownPts[p]));const minO=Math.min(...ps.map(p=>ownPts[p]));const bestO=ps.reduce((a,b)=>ownPts[a]>=ownPts[b]?a:b);const worstO=ps.reduce((a,b)=>ownPts[a]<=ownPts[b]?a:b);
+  let decHTML="";if(decisive){const body=decisive.isPass?`Omgång <strong>${decisive.idx}</strong> – <strong>${esc(decisive.r.forhand)}</strong> valde <strong>Pass</strong>. ${esc(decisive.winner)} tog bara ${decisive.r.tricks[decisive.winner]} stick (${fmt(decisive.wScore)} p).`:`Omgång <strong>${decisive.idx}</strong> – <strong>${esc(decisive.r.forhand)}</strong> spelade <strong>${decisive.r.type}</strong>. ${esc(decisive.winner)} tog ${decisive.r.tricks[decisive.winner]} stick (${fmt(decisive.wScore)} p), ca <strong>${fmt(Math.round(decisive.gain))} p</strong> bättre än snittet.`;decHTML=`<div class="dec-card${decisive.isPass?" pass":""}"><div class="dec-ttl">${decisive.isPass?"🎯 Nyckelpassning":"⚡ Avgörande omgång"}</div><div class="dec-body">${body}</div></div>`}
+  return`<div class="win-banner"><span class="win-crown">${winners.length>1?"🤝":"🏆"}</span><div class="win-lbl">${winners.length>1?"Oavgjort":"Vinnare"}</div><div class="win-name">${winners.map(esc).join(" &amp; ")}</div></div>${buildChart(g)}<div class="ins-card"><div class="ins-title">Slutresultat</div>${sorted.map((p,i)=>`<div class="irow"><span class="iname">${["🥇","🥈","🥉"][i]||""} ${esc(p)}</span><span style="font-size:18px;font-weight:700" class="${scls(fs[p])}">${fmt(fs[p])} p</span></div>`).join("")}</div><div class="ins-card"><div class="ins-title">Rundvinster</div>${ps.map(p=>`<div class="irow"><span class="iname">${esc(p)}</span><span style="display:flex;align-items:center;gap:8px"><span class="${rWins[p]===maxRW?"ibest":""}">${rWins[p]} av 12</span><span class="bar-w"><span class="bar-f${rWins[p]===maxRW?" best":""}" style="width:${Math.round(rWins[p]/12*100)}%"></span></span></span></div>`).join("")}</div><div class="ins-card"><div class="ins-title">Egna val – poäng som förhand</div>${ps.map(p=>`<div class="irow"><span class="iname">${esc(p)}</span><span class="${ownPts[p]===maxO?"ibest":ownPts[p]===minO&&minO<maxO?"iworst":""}">${fmt(ownPts[p])} p</span></div>`).join("")}${maxO-minO>=5?`<div class="hint">💡 <strong>${esc(bestO)}</strong> fick ut ${fmt(ownPts[bestO])} p på sina egna val – ${maxO-minO} p mer än <strong>${esc(worstO)}</strong>.</div>`:""}</div><div class="ins-card"><div class="ins-title">Bäst per speltyp</div>${GT.map(gt=>{const tb=typeBest[gt];if(!tb)return"";return`<div class="irow"><span><span class="gtb${gt==="Pass"?" pass":""}">${gt}</span></span><span><span class="ibest">${esc(tb.player)}</span><span class="sub">snitt ${tb.avg} stick</span></span></div>`}).join("")}</div>${decHTML}`;
+}
+const bApp=()=>document.getElementById("bsk-app");
+const bModal=()=>document.getElementById("bsk-modal");
+function bRender(){const el=bApp();if(!el)return;el.innerHTML=bScreen==="setup"?bRSetup():bScreen==="game"?bRGame():bScreen==="summary"?bRSummary():bScreen==="history"?bRHist():bScreen==="detail"?bRDetail():bRStats();["game","history","stats"].forEach(s=>{const el2=document.getElementById("bsk-nb-"+s);if(el2)el2.className="nb"+((bScreen===s||(s==="game"&&(bScreen==="setup"||bScreen==="summary"))||(s==="history"&&bScreen==="detail"))?" active":"");});}
+function bRSetup(){const ex=Object.keys(pdb).sort();return`<div class="page"><div class="ph"><h1>Bismarck</h1></div><div class="sec">Välj spelare (3 st)</div>${[0,1,2].map(i=>`<div class="slot"><div class="slot-lbl">Spelare ${i+1}</div><input type="text" id="bsk-pi${i}" value="${esc(spArr[i])}" placeholder="Skriv ett namn…" oninput="BSK.pickInput(${i},this.value)">${ex.length?`<div class="chips">${ex.map(n=>`<div class="chip${spArr[i]===n?" active":""}" onclick="BSK.pickP(${i},'${esc(n)}')">${esc(n)}</div>`).join("")}</div>`:""}</div>`).join("")}<div class="btn btn-primary" onclick="BSK.startGame()">Starta spel</div>${bGame?`<div class="btn btn-primary" style="background:var(--s2);color:var(--text);border:.5px solid var(--b2)" onclick="BSK.continueGame()">↩ Fortsätt pågående spel</div>`:""}</div>`;}
+function bRGame(){if(!bGame){bScreen="setup";return bRSetup()}const ps=bGame.players,tots=ps.map(p=>ptotal(p,bGame)),max=Math.max(...tots);const nd=countDone(bGame),done=nd===12;return`<div class="page"><div class="ph"><h2>Pågående spel</h2><div class="ha"><div class="btn btn-sm btn-ghost" onclick="BSK.showAbandon()">Avbryt</div></div></div><div class="scards" style="grid-template-columns:repeat(3,1fr)">${ps.map((p,i)=>{const t=tots[i],lead=t===max&&max!==0;return`<div class="scard${lead?" leader":""}"><div class="sc-n">${esc(p)}${lead?" ★":""}</div><div class="sc-t ${scls(t)}">${fmt(t)}</div><div class="sc-pips">${GT.map(gt=>`<span class="pip${(bGame.usedTypes[p]||[]).includes(gt)?" used":""}">${gt.slice(0,3)}</span>`).join("")}</div></div>`}).join("")}</div>${buildChart(bGame)}<div class="prog-card"><div class="prog-row"><div class="prog-info"><div class="prog-title">${done?"✅ Alla rundor klara":nd+"/12 rundor ifyllda"}</div><div class="prog-sub">${done?"Tryck Avsluta för att se statistik":"Fyll i speltyp och stick för varje runda"}</div></div><div class="btn btn-gold" onclick="BSK.doFinish()" style="${!done?"opacity:.35;pointer-events:none":""}">🏆 Avsluta</div></div>${!done?`<div class="prog-bar"><div class="prog-fill" style="width:${Math.round(nd/12*100)}%"></div></div>`:""}</div><div class="sec">Rundor</div>${bGame.rounds.map((r,ri)=>bRRound(r,ri)).join("")}</div>`;}
+function bRRound(r,ri){const ps=bGame.players,isPass=r.type==="Pass",comp=roundDone(r,ps);const avail=GT.filter(gt=>!(bGame.usedTypes[r.forhand]||[]).includes(gt)||gt===r.type);function drop(pi,name){if(pi===ps.length-1){const v=r.tricks[name];return`<div class="autov${isPass?" pass":""}${!tricksOk(v)?" dim":""}">${tricksOk(v)?+v:"—"}</div>`}const prevFilled=pi===0||ps.slice(0,pi).every(p=>tricksOk(r.tricks[p]));if(!prevFilled)return`<div class="autov dim">—</div>`;const prevSum=ps.slice(0,pi).reduce((s,p)=>{const t=parseInt(r.tricks[p]);return s+(isNaN(t)?0:t)},0);const maxT=TT-prevSum;const cur=parseInt(r.tricks[name]);const sel=(!isNaN(cur)&&cur>=0&&cur<=maxT)?cur:-1;return`<select class="trdrop${isPass?" pass":""}" onchange="BSK.setTricks(${ri},'${esc(name)}',this.value)"><option value="">—</option>${Array.from({length:maxT+1},(_,v)=>`<option value="${v}"${sel===v?" selected":""}>${v}</option>`).join("")}</select>`;}return`<div class="rcard${isPass?" pass-r":""}${comp?" done":""}"><div class="rh"><span class="rnum">${r.id}</span><div class="fh-info"><span class="fh-name">${esc(r.forhand)}</span><span class="fh-lbl">förhand</span></div><select class="tsel${isPass?" pass":""}" onchange="BSK.setType(${ri},this.value)"><option value="">Välj speltyp</option>${avail.map(gt=>`<option value="${gt}"${r.type===gt?" selected":""}>${gt}</option>`).join("")}</select>${comp?`<span style="color:var(--green);font-size:16px">✓</span>`:""}</div>${r.type?`<div class="tricks-row">${ps.map((p,pi)=>{const t=parseInt(r.tricks[p]);const pts=!isNaN(t)?tscore(t,r.type):null;return`<div class="tc${p===r.forhand?" fhcol":""}"><div class="tlbl">${esc(p)}</div>${drop(pi,p)}${pts!==null?`<div class="tpts ${scls(pts)}">${fmt(pts)} p</div>`:""}</div>`}).join("")}</div>`:""}</div>`;}
+let lastSummary=null;
+function bRSummary(){if(!lastSummary){bScreen="history";return bRHist()}return`<div class="page"><div class="ph"><h2>Resultat</h2><div class="ha"><div class="btn btn-sm" onclick="BSK.newGameBtn()">Nytt spel</div></div></div>${rSummaryContent(lastSummary)}<div class="btn btn-primary" onclick="BSK.navTo('history')">Se historik</div></div>`;}
+function bRHist(){const list=[...hist].reverse();return`<div class="page"><div class="ph"><h2>Historik</h2><span style="font-size:13px;color:var(--t2)">${list.length} spel</span></div>${!list.length?`<div class="empty">Inga avslutade spel ännu</div>`:list.map(g=>{const mx=Math.max(...g.players.map(p=>g.finalScores[p]));return`<div class="hcard" onclick="BSK.openDetail(${g.id})"><div class="hhdr"><span class="hdate">${g.date}</span><span class="hwinner">🏆 ${esc(g.winner)}</span></div>${g.players.map(p=>`<div class="hpl${g.finalScores[p]===mx?" winner":""}"><span>${esc(p)}</span><span class="${scls(g.finalScores[p])}">${fmt(g.finalScores[p])} p</span></div>`).join("")}<div class="htap">Tryck för detaljer →</div></div>`}).join("")}${list.length?`<div class="btn btn-sm btn-ghost" onclick="BSK.clearHist()" style="margin-top:4px">Rensa historik</div>`:""}</div>`;}
+function bRDetail(){if(!detailRec){bScreen="history";return bRHist()}const a=analyze(detailRec);return`<div class="page"><div class="ph"><div><div style="font-size:11px;color:var(--t3);margin-bottom:2px">${detailRec.date}</div><h2>Speldetaljer</h2></div><div class="btn btn-sm btn-ghost" onclick="BSK.back()">← Tillbaka</div></div>${rSummaryContent(a)}</div>`;}
+function bRStats(){const names=Object.keys(pdb).sort();const tabs=["overview",...names];if(!tabs.includes(statTab))statTab="overview";const tabHTML=`<div class="stabs">${tabs.map(t=>`<div class="stab${t===statTab?" active":""}" onclick="BSK.setStatTab('${esc(t)}')">${t==="overview"?"Översikt":esc(t)}</div>`).join("")}</div>`;if(statTab==="overview")return`<div class="page"><div class="ph"><h2>Statistik</h2></div>${tabHTML}${bRStatsOverview(names)}</div>`;const p=pdb[statTab];if(!p)return`<div class="page"><div class="ph"><h2>Statistik</h2></div>${tabHTML}</div>`;return`<div class="page"><div class="ph"><h2>Statistik</h2></div>${tabHTML}${bRStatsPlayer(p)}</div>`;}
+function bRStatsOverview(names){if(!names.length)return`<div class="empty">Avsluta ett spel för att se statistik.</div>`;const totalGames=hist.length;const allPlayers=new Set(hist.flatMap(g=>g.players));const rows=names.map(n=>{const p=fixP(pdb[n]);const wp=p.gamesPlayed>0?Math.round(p.wins/p.gamesPlayed*100):0;return{n,p,wp}}).sort((a,b)=>b.wp-a.wp||b.p.wins-a.p.wins);const best=rows[0];return`<div class="stat3"><div class="statc"><div class="stv">${totalGames}</div><div class="stl">Spel totalt</div></div><div class="statc"><div class="stv">${allPlayers.size}</div><div class="stl">Spelare</div></div><div class="statc"><div class="stv">${best?best.wp+"%":"-"}</div><div class="stl">Bäst vinstprocent</div></div></div>${best?`<div class="ins-card" style="margin-bottom:10px"><div class="ins-title">Ledartavla</div><div class="irow" style="font-size:12px;color:var(--t2);padding-bottom:4px"><span>Spelare</span><span style="display:flex;gap:20px"><span>Spel</span><span>Vinst</span><span>V%</span><span>🥇</span><span>🥈</span><span>🥉</span></span></div>${rows.map((r,i)=>{const p=r.p;return`<div class="irow${i===0?" ibest":""}"><span class="iname">${["🥇","🥈","🥉"][i]||"  "} ${esc(r.n)}</span><span style="display:flex;gap:20px;font-size:13px"><span>${p.gamesPlayed}</span><span>${p.wins}</span><span class="${r.wp>=50?"ibest":""}">${r.wp}%</span><span style="color:var(--gold)">${p.positions[1]||0}</span><span style="color:var(--t2)">${p.positions[2]||0}</span><span style="color:var(--t3)">${p.positions[3]||0}</span></span></div>`}).join("")}</div>`:""}
+<div class="ins-card"><div class="ins-title">Mest spelade speltyper (alla spel)</div>${(()=>{const counts=Object.fromEntries(GT.map(gt=>[gt,0]));hist.forEach(g=>(g.rounds||[]).forEach(r=>{if(r.type)counts[r.type]++}));const max=Math.max(...Object.values(counts));return GT.map(gt=>`<div class="irow"><span><span class="gtb${gt==="Pass"?" pass":""}">${gt}</span></span><span style="display:flex;align-items:center;gap:8px"><span class="${counts[gt]===max?"ibest":""}">${counts[gt]} rundor</span><span class="bar-w"><span class="bar-f${counts[gt]===max?" best":""}" style="width:${max>0?Math.round(counts[gt]/max*100):0}%"></span></span></span></div>`).join("")})()} </div>`;}
+function bRStatsPlayer(p){fixP(p);const wp=p.gamesPlayed>0?Math.round(p.wins/p.gamesPlayed*100):0;const tot=p.positions[1]+p.positions[2]+p.positions[3];return`<div class="stat4"><div class="statc"><div class="stv">${p.gamesPlayed}</div><div class="stl">Spelade</div></div><div class="statc"><div class="stv">${p.wins}</div><div class="stl">Vinster</div></div><div class="statc"><div class="stv">${wp}%</div><div class="stl">Vinstprocent</div></div><div class="statc"><div class="stv">${hist.filter(g=>g.players.includes(p.name)).length}</div><div class="stl">Spel med</div></div></div><div class="ins-card"><div class="ins-title">Placeringar</div>${[[1,"🥇",p.positions[1]||0],[2,"🥈",p.positions[2]||0],[3,"🥉",p.positions[3]||0]].map(([pos,medal,count])=>{const pct=tot>0?Math.round(count/tot*100):0;return`<div class="irow"><span class="iname">${medal} ${pos===1?"1:a":pos===2?"2:a":"3:e"} plats</span><span style="display:flex;align-items:center;gap:8px"><span>${count} ggr${tot>0?" ("+pct+"%)":""}</span><span class="bar-w"><span class="bar-f${pos===1?" best":""}" style="width:${pct}%"></span></span></span></div>`}).join("")}</div><div class="sec">Snitt stick per speltyp</div><div class="tblwrap"><table class="tbl"><thead><tr><th>Speltyp</th><th class="r">Som förhand</th><th class="r">Som annan</th></tr></thead><tbody>${GT.map(gt=>{const d=p.byType[gt]||{asForhand:{rounds:0,totalTricks:0},asOther:{rounds:0,totalTricks:0}};const fa=d.asForhand.rounds>0?(d.asForhand.totalTricks/d.asForhand.rounds).toFixed(1):"—";const oa=d.asOther.rounds>0?(d.asOther.totalTricks/d.asOther.rounds).toFixed(1):"—";return`<tr><td><span class="gtb${gt==="Pass"?" pass":""}">${gt}</span></td><td class="r">${fa}<span class="sub">(${d.asForhand.rounds})</span></td><td class="r">${oa}<span class="sub">(${d.asOther.rounds})</span></td></tr>`}).join("")}</tbody></table></div>`;}
+function navTo(s){bScreen=s==="game"?(bGame?"game":"setup"):s;bRender()}
+function pickP(i,name){spArr[i]=name;bRender()}
+function pickInput(i,val){spArr[i]=val}
+function continueGame(){bScreen="game";bRender()}
+function newGameBtn(){bScreen="setup";spArr=["","",""];bRender()}
+function back(){bScreen="history";bRender()}
+function setStatTab(t){statTab=t;bRender()}
+function openDetail(id){detailRec=hist.find(g=>g.id===id)||null;if(detailRec){bScreen="detail";bRender()}}
+function startGame(){const names=[0,1,2].map(i=>(document.getElementById("bsk-pi"+i)?.value||spArr[i]||"").trim()||`Spelare ${i+1}`);if(new Set(names).size<3){bShowMsg("Spelarna måste ha unika namn.");return}names.forEach(n=>getP(n));bGame=newGame(names);store("bsk8_game",bGame);bScreen="game";bRender();}
+function setType(ri,type){const r=bGame.rounds[ri],old=r.type;if(old&&old!==type){const idx=(bGame.usedTypes[r.forhand]||[]).indexOf(old);if(idx>-1)bGame.usedTypes[r.forhand].splice(idx,1);bGame.players.forEach(p=>r.tricks[p]="")}r.type=type;if(type&&!(bGame.usedTypes[r.forhand]||[]).includes(type)){if(!bGame.usedTypes[r.forhand])bGame.usedTypes[r.forhand]=[];bGame.usedTypes[r.forhand].push(type)}store("bsk8_game",bGame);bRender();}
+function setTricks(ri,player,val){const r=bGame.rounds[ri],ps=bGame.players;r.tricks[player]=val===""?"":parseInt(val);const[p0,p1,p2]=ps;const t0=parseInt(r.tricks[p0]),t1=parseInt(r.tricks[p1]);if(player===p0&&!isNaN(t0)&&!isNaN(t1)&&t0+t1>TT){r.tricks[p1]="";r.tricks[p2]=""}if(ps.slice(0,-1).every(p=>tricksOk(r.tricks[p]))){const sum=ps.slice(0,-1).reduce((s,p)=>s+parseInt(r.tricks[p]),0);r.tricks[p2]=Math.max(0,TT-sum);}else{r.tricks[p2]=""}store("bsk8_game",bGame);bRender();}
+function doFinish(){const ps=bGame.players;const fs=Object.fromEntries(ps.map(p=>[p,ptotal(p,bGame)]));const maxS=Math.max(...Object.values(fs));const winners=ps.filter(p=>fs[p]===maxS);const positions=getPositions(ps,fs);const rec={id:Date.now(),date:new Date().toLocaleDateString("sv-SE"),players:ps,winner:winners.join(" & "),finalScores:fs,rounds:JSON.parse(JSON.stringify(bGame.rounds))};hist.push(rec);store("bsk8_hist",hist);ps.forEach(p=>{const pr=getP(p);pr.gamesPlayed++;if(fs[p]===maxS)pr.wins++;const pos=positions[p];if(pos>=1&&pos<=3)pr.positions[pos]++;bGame.rounds.forEach(r=>{if(!r.type)return;const tv=parseInt(r.tricks[p]);if(isNaN(tv))return;const key=r.forhand===p?"asForhand":"asOther";pr.byType[r.type][key].rounds++;pr.byType[r.type][key].totalTricks+=tv});pdb[p]=pr;});store("bsk8_pdb",pdb);lastSummary=analyze(rec);bGame=null;store("bsk8_game",null);bScreen="summary";bRender();}
+function bShowModal(html){const m=bModal();if(m)m.innerHTML=`<div class="overlay" onclick="if(event.target.classList.contains('overlay'))BSK.closeModal()">${html}</div>`}
+function closeModal(){const m=bModal();if(m)m.innerHTML=""}
+function bShowMsg(msg){bShowModal(`<div class="modal"><div class="modal-title">⚠️</div><div class="modal-sub">${esc(msg)}</div><div class="modal-btns"><div class="btn btn-primary" onclick="BSK.closeModal()">OK</div></div></div>`)}
+function showAbandon(){bShowModal(`<div class="modal"><div class="modal-title">Avbryt spel?</div><div class="modal-sub">Pågående spel sparas inte.</div><div class="modal-btns"><div class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="BSK.doAbandon()">Ja, avbryt</div><div class="btn btn-ghost" onclick="BSK.closeModal()">Tillbaka</div></div></div>`)}
+function doAbandon(){bGame=null;store("bsk8_game",null);spArr=["","",""];closeModal();bScreen="setup";bRender();}
+function clearHist(){bShowModal(`<div class="modal"><div class="modal-title">Rensa historik?</div><div class="modal-sub">All historik tas bort.</div><div class="modal-btns"><div class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="BSK.doClearHist()">Rensa</div><div class="btn btn-ghost" onclick="BSK.closeModal()">Avbryt</div></div></div>`)}
+function doClearHist(){hist=[];store("bsk8_hist",hist);closeModal();bRender();}
+function initBSK(){bRender();}
+return{init:initBSK,navTo,pickP,pickInput,continueGame,newGameBtn,back,setStatTab,openDetail,startGame,setType,setTricks,doFinish,closeModal,showAbandon,doAbandon,clearHist,doClearHist};
+})();
+
+
+/* ══════════════════════════════════
+   BOOT
+══════════════════════════════════ */
+// Show launcher on load. Badge updates happen inside showLauncher().
+showLauncher();
+</script>
+</body>
+</html>
